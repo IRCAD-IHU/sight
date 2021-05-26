@@ -56,11 +56,11 @@ public:
     virtual ~IDataSerializer() = default;
 
     /// Serialization function
-    /// @param archive output archive where to write binary files to
-    /// @param tree output tree where to write trivial class members to
-    /// @param object the object to serialize
-    /// @param children [OUT] the list of child objects belonging to object
-    /// @param password (optional) the password to use if encryption is enabled
+    /// @param[in,out] archive output archive where to write binary files to
+    /// @param[in,out] tree output tree where to write trivial class members to
+    /// @param[in] object the object to serialize
+    /// @param[out] children the list of child objects belonging to object
+    /// @param[in] password (optional) the password to use if encryption is enabled
     virtual void serialize(
         const zip::ArchiveWriter::sptr& archive,
         boost::property_tree::ptree& tree,

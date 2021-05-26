@@ -22,6 +22,7 @@
 #include "SessionDeserializer.hpp"
 
 #include "data/ActivitySeriesDeserializer.hpp"
+#include "data/ArrayDeserializer.hpp"
 #include "data/CompositeDeserializer.hpp"
 #include "data/EquipmentDeserializer.hpp"
 #include "data/GenericDeserializer.hpp"
@@ -70,7 +71,8 @@ static const std::unordered_map<std::string, std::function<data::IDataDeserializ
     {sight::data::Patient::classname(), &std::make_unique<data::PatientDeserializer>},
     {sight::data::Study::classname(), &std::make_unique<data::StudyDeserializer>},
     {sight::data::Series::classname(), &std::make_unique<data::SeriesDeserializer>},
-    {sight::data::ActivitySeries::classname(), &std::make_unique<data::ActivitySeriesDeserializer>}
+    {sight::data::ActivitySeries::classname(), &std::make_unique<data::ActivitySeriesDeserializer>},
+    {sight::data::Array::classname(), &std::make_unique<data::ArrayDeserializer>}
 };
 
 // Return a writer from a data object class name

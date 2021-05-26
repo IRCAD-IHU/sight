@@ -45,6 +45,7 @@ CPPUNIT_TEST(patientTest);
 CPPUNIT_TEST(studyTest);
 CPPUNIT_TEST(seriesTest);
 CPPUNIT_TEST(activitySeriesTest);
+CPPUNIT_TEST(arrayTest);
 CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -66,6 +67,7 @@ public:
     void studyTest();
     void seriesTest();
     void activitySeriesTest();
+    void arrayTest();
 };
 
 } // namespace ut

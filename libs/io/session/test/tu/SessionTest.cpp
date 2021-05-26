@@ -24,6 +24,7 @@
 
 #include <core/crypto/AES256.hpp>
 #include <core/data/ActivitySeries.hpp>
+#include <core/data/Array.hpp>
 #include <core/data/Boolean.hpp>
 #include <core/data/Composite.hpp>
 #include <core/data/Equipment.hpp>
@@ -854,7 +855,7 @@ void SessionTest::activitySeriesTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "activitySeriesTest.zip";
 
-    /// Test vector
+    // Test vector
     const std::string stringValue(UUID::generateUUID());
     const std::int64_t integerValue = 42;
     const bool booleanValue         = true;
@@ -1082,6 +1083,79 @@ void SessionTest::activitySeriesTest()
         CPPUNIT_ASSERT_EQUAL(performedProcedureStepEndTime, series->getPerformedProcedureStepEndTime());
         CPPUNIT_ASSERT_EQUAL(performedProcedureStepDescription, series->getPerformedProcedureStepDescription());
         CPPUNIT_ASSERT_EQUAL(performedProcedureComments, series->getPerformedProcedureComments());
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::arrayTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "arrayTest.zip";
+
+    // Test vector
+    const std::array<std::array<std::uint8_t, 3>, 4> testVector = {{
+        {0, 1, 1},
+        {2, 3, 5},
+        {8, 13, 21},
+        {34, 55, 89}
+    }
+    };
+
+    // Test serialization
+    {
+        // Create the array
+        data::Array::sptr array    = data::Array::New();
+        data::Array::SizeType size = {3, 4};
+        array->resize(size, core::tools::Type::s_UINT8, true);
+
+        // Fill
+        data::Array::Iterator<std::uint8_t> iter = array->begin<std::uint8_t>();
+
+        for(const auto& row : testVector)
+        {
+            for(const auto cell : row)
+            {
+                *iter = cell;
+                ++iter;
+            }
+        }
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(array);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test values
+        const auto& array = data::Array::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(array);
+
+        data::Array::Iterator<std::uint8_t> iter = array->begin<std::uint8_t>();
+
+        for(const auto& row : testVector)
+        {
+            for(const auto cell : row)
+            {
+                CPPUNIT_ASSERT_EQUAL(cell, *iter);
+                ++iter;
+            }
+        }
     }
 }
 

@@ -22,6 +22,7 @@
 #include "SessionSerializer.hpp"
 
 #include "data/ActivitySeriesSerializer.hpp"
+#include "data/ArraySerializer.hpp"
 #include "data/CompositeSerializer.hpp"
 #include "data/EquipmentSerializer.hpp"
 #include "data/GenericSerializer.hpp"
@@ -68,7 +69,8 @@ static const std::unordered_map<std::string, std::function<data::IDataSerializer
     {sight::data::Patient::classname(), &std::make_unique<data::PatientSerializer>},
     {sight::data::Study::classname(), &std::make_unique<data::StudySerializer>},
     {sight::data::Series::classname(), &std::make_unique<data::SeriesSerializer>},
-    {sight::data::ActivitySeries::classname(), &std::make_unique<data::ActivitySeriesSerializer>}
+    {sight::data::ActivitySeries::classname(), &std::make_unique<data::ActivitySeriesSerializer>},
+    {sight::data::Array::classname(), &std::make_unique<data::ArraySerializer>}
 };
 
 // Return a writer from a data object class name

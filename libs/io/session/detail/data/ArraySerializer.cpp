@@ -19,16 +19,9 @@
  *
  ***********************************************************************/
 
-#include "MeshSerializer.hpp"
+#include "ArraySerializer.hpp"
 
-#include <data/Mesh.hpp>
-
-#include <io/vtk/helper/Mesh.hpp>
-
-#include <vtkOutputStream.h>
-#include <vtkPolyData.h>
-#include <vtkSmartPointer.h>
-#include <vtkXMLPolyDataWriter.h>
+#include <data/Array.hpp>
 
 namespace sight::io::session
 {
@@ -37,7 +30,7 @@ namespace detail::data
 {
 
 /// Serialization function
-void MeshSerializer::serialize(
+void ArraySerializer::serialize(
     const zip::ArchiveWriter::sptr& archive,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
@@ -45,43 +38,46 @@ void MeshSerializer::serialize(
     const core::crypto::secure_string& password
 ) const
 {
-    const auto& mesh = sight::data::Mesh::dynamicCast(object);
+    const auto& array = sight::data::Array::dynamicCast(object);
     SIGHT_ASSERT(
         "Object '"
         << (object ? object->getClassname() : sight::data::Object::classname())
         << "' is not a '"
-        << sight::data::Mesh::classname()
+        << sight::data::Array::classname()
         << "'",
-        mesh
+        array
     );
 
     // Add a version number. Not mandatory, but could help for future release
     tree.put("version", 1);
 
-    // Convert the mesh to VTK
-    const auto& vtkMesh = vtkSmartPointer<vtkPolyData>::New();
-    io::vtk::helper::Mesh::toVTKMesh(mesh, vtkMesh);
+    // Serialize members
 
-    // Create the vtk writer
-    const auto& vtkWriter = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-    vtkWriter->SetCompressorTypeToNone();
-    vtkWriter->SetDataModeToBinary();
-    vtkWriter->WriteToOutputStringOn();
-    vtkWriter->SetInputData(vtkMesh);
+    // Size
+    boost::property_tree::ptree sizesTree;
 
-    // Write to internal string...
-    vtkWriter->Update();
+    for(const auto& size : array->getSize())
+    {
+        sizesTree.add("Size", size);
+    }
+
+    tree.add_child("Sizes", sizesTree);
+
+    // type, isBufferOwner
+    tree.put("Type", array->getType().string());
+    tree.put("IsBufferOwner", array->getIsBufferOwner());
 
     // Create the output file inside the archive
     const auto& ostream = archive->openFile(
-        std::filesystem::path(mesh->getUUID() + "/mesh.vtp"),
+        std::filesystem::path(array->getUUID() + "/buffer.raw"),
         password,
         zip::Method::ZSTD,
         zip::Level::DEFAULT
     );
 
     // Write back to the archive
-    (*ostream) << vtkWriter->GetOutputString();
+    const auto& buffer = array->getBufferObject();
+    ostream->write(static_cast<const char*>(buffer->getBuffer()), static_cast<std::streamsize>(buffer->getSize()));
 }
 
 } // detail::data

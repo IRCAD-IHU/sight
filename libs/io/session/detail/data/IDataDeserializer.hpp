@@ -56,11 +56,11 @@ public:
     virtual ~IDataDeserializer() = default;
 
     /// Serialization function
-    /// @param archive the archive where to read binary files
-    /// @param tree the tree where to read trivial object members
-    /// @param children a map of data object that belongs to the object
-    /// @param object the object to deserialize using the archive, the tree and the children map
-    /// @param password (optional) the password used for encryption
+    /// @param[in] archive the archive where to read binary files
+    /// @param[in] tree the tree where to read trivial object members
+    /// @param[in] children a map of data object that belongs to the object
+    /// @param[in,out] object the object to deserialize using the archive, the tree and the children map
+    /// @param[in] password (optional) the password used for encryption
     virtual sight::data::Object::sptr deserialize(
         const zip::ArchiveReader::sptr& archive,
         const boost::property_tree::ptree& tree,

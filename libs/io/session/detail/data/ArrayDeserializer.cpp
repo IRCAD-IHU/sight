@@ -19,18 +19,11 @@
  *
  ***********************************************************************/
 
-#include "MeshDeserializer.hpp"
+#include "ArrayDeserializer.hpp"
 
 #include <core/exceptionmacros.hpp>
 
-#include <data/Mesh.hpp>
-
-#include <io/vtk/helper/Mesh.hpp>
-
-#include <vtkInputStream.h>
-#include <vtkPolyData.h>
-#include <vtkSmartPointer.h>
-#include <vtkXMLPolyDataReader.h>
+#include <data/Array.hpp>
 
 namespace sight::io::session
 {
@@ -40,7 +33,7 @@ namespace detail::data
 
 //------------------------------------------------------------------------------
 
-sight::data::Object::sptr MeshDeserializer::deserialize(
+sight::data::Object::sptr ArrayDeserializer::deserialize(
     const zip::ArchiveReader::sptr& archive,
     const boost::property_tree::ptree& tree,
     const std::map<std::string, sight::data::Object::sptr>& children,
@@ -49,40 +42,51 @@ sight::data::Object::sptr MeshDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& mesh = object ? sight::data::Mesh::dynamicCast(object) : sight::data::Mesh::New();
+    const auto& array = object ? sight::data::Array::dynamicCast(object) : sight::data::Array::New();
 
     SIGHT_ASSERT(
-        "Object '" << mesh->getClassname() << "' is not a '" << sight::data::Mesh::classname() << "'",
-        mesh
+        "Object '" << array->getClassname() << "' is not a '" << sight::data::Array::classname() << "'",
+        array
     );
 
     // Check version number. Not mandatory, but could help for future release
     const int version = tree.get<int>("version", 0);
     SIGHT_THROW_IF(
-        MeshDeserializer::classname() << " is not implemented for version '" << version << "'.",
+        ArrayDeserializer::classname() << " is not implemented for version '" << version << "'.",
         version > 1
     );
+
+    // Type
+    array->setType(tree.get<std::string>("Type"));
+
+    // IsBufferOwner
+    array->setIsBufferOwner(tree.get<bool>("IsBufferOwner", false));
+
+    // Sizes
+    std::vector<size_t> sizes;
+
+    for(const auto& sizeTree : tree.get_child("Sizes"))
+    {
+        const auto& size = sizeTree.second.get_value<size_t>();
+        sizes.push_back(size);
+    }
+
+    array->resize(sizes, true);
+
+    // Buffer
+    const auto& bufferObject = array->getBufferObject();
+    core::memory::BufferObject::Lock lockerSource(bufferObject);
 
     // Create the istream from the input file inside the archive
     const auto& uuid    = tree.get<std::string>("uuid");
     const auto& istream = archive->openFile(
-        std::filesystem::path(uuid + "/mesh.vtp"),
+        std::filesystem::path(uuid + "/buffer.raw"),
         password
     );
 
-    // "Convert" it to a string
-    const std::string content {std::istreambuf_iterator<char>(*istream), std::istreambuf_iterator<char>()};
+    istream->read(static_cast<char*>(bufferObject->getBuffer()), static_cast<std::streamsize>(bufferObject->getSize()));
 
-    // Create the vtk reader
-    const auto& vtkReader = vtkSmartPointer<vtkXMLPolyDataReader>::New();
-    vtkReader->ReadFromInputStringOn();
-    vtkReader->SetInputString(content);
-    vtkReader->Update();
-
-    // Convert from VTK
-    io::vtk::helper::Mesh::fromVTKMesh(vtkReader->GetOutput(), mesh);
-
-    return mesh;
+    return array;
 }
 
 } // detail::data
