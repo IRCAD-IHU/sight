@@ -26,6 +26,7 @@
 #include "data/CompositeSerializer.hpp"
 #include "data/EquipmentSerializer.hpp"
 #include "data/GenericSerializer.hpp"
+#include "data/ImageSerializer.hpp"
 #include "data/MeshSerializer.hpp"
 #include "data/PatientSerializer.hpp"
 #include "data/SeriesSerializer.hpp"
@@ -33,10 +34,12 @@
 #include "data/StudySerializer.hpp"
 
 #include <data/ActivitySeries.hpp>
+#include <data/Array.hpp>
 #include <data/Boolean.hpp>
 #include <data/Composite.hpp>
 #include <data/Equipment.hpp>
 #include <data/Float.hpp>
+#include <data/Image.hpp>
 #include <data/Integer.hpp>
 #include <data/Mesh.hpp>
 #include <data/mt/locked_ptr.hpp>
@@ -70,7 +73,8 @@ static const std::unordered_map<std::string, std::function<data::IDataSerializer
     {sight::data::Study::classname(), &std::make_unique<data::StudySerializer>},
     {sight::data::Series::classname(), &std::make_unique<data::SeriesSerializer>},
     {sight::data::ActivitySeries::classname(), &std::make_unique<data::ActivitySeriesSerializer>},
-    {sight::data::Array::classname(), &std::make_unique<data::ArraySerializer>}
+    {sight::data::Array::classname(), &std::make_unique<data::ArraySerializer>},
+    {sight::data::Image::classname(), &std::make_unique<data::ImageSerializer>}
 };
 
 // Return a writer from a data object class name

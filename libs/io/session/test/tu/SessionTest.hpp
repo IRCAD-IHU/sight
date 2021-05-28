@@ -46,6 +46,7 @@ CPPUNIT_TEST(studyTest);
 CPPUNIT_TEST(seriesTest);
 CPPUNIT_TEST(activitySeriesTest);
 CPPUNIT_TEST(arrayTest);
+CPPUNIT_TEST(imageTest);
 CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -68,6 +69,7 @@ public:
     void seriesTest();
     void activitySeriesTest();
     void arrayTest();
+    void imageTest();
 };
 
 } // namespace ut

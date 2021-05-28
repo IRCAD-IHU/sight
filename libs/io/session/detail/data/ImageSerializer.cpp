@@ -19,15 +19,15 @@
  *
  ***********************************************************************/
 
-#include "MeshSerializer.hpp"
+#include "ImageSerializer.hpp"
 
-#include <data/Mesh.hpp>
+#include "io/vtk/vtk.hpp"
 
-#include <io/vtk/helper/Mesh.hpp>
+#include <data/Image.hpp>
 
-#include <vtkPolyData.h>
+#include <vtkImageData.h>
 #include <vtkSmartPointer.h>
-#include <vtkXMLPolyDataWriter.h>
+#include <vtkXMLImageDataWriter.h>
 
 namespace sight::io::session
 {
@@ -36,7 +36,7 @@ namespace detail::data
 {
 
 /// Serialization function
-void MeshSerializer::serialize(
+void ImageSerializer::serialize(
     const zip::ArchiveWriter::sptr& archive,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
@@ -44,36 +44,36 @@ void MeshSerializer::serialize(
     const core::crypto::secure_string& password
 ) const
 {
-    const auto& mesh = sight::data::Mesh::dynamicCast(object);
+    const auto& image = sight::data::Image::dynamicCast(object);
     SIGHT_ASSERT(
         "Object '"
         << (object ? object->getClassname() : sight::data::Object::classname())
         << "' is not a '"
-        << sight::data::Mesh::classname()
+        << sight::data::Image::classname()
         << "'",
-        mesh
+        image
     );
 
     // Add a version number. Not mandatory, but could help for future release
     tree.put("version", 1);
 
-    // Convert the mesh to VTK
-    const auto& vtkMesh = vtkSmartPointer<vtkPolyData>::New();
-    io::vtk::helper::Mesh::toVTKMesh(mesh, vtkMesh);
+    // Convert the image to VTK
+    const auto& vtkImage = vtkSmartPointer<vtkImageData>::New();
+    io::vtk::toVTKImage(image, vtkImage);
 
     // Create the vtk writer
-    const auto& vtkWriter = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+    const auto& vtkWriter = vtkSmartPointer<vtkXMLImageDataWriter>::New();
     vtkWriter->SetCompressorTypeToNone();
     vtkWriter->SetDataModeToBinary();
     vtkWriter->WriteToOutputStringOn();
-    vtkWriter->SetInputData(vtkMesh);
+    vtkWriter->SetInputData(vtkImage);
 
     // Write to internal string...
     vtkWriter->Update();
 
     // Create the output file inside the archive
     const auto& ostream = archive->openFile(
-        std::filesystem::path(mesh->getUUID() + "/mesh.vtp"),
+        std::filesystem::path(image->getUUID() + "/image.vti"),
         password,
         zip::Method::ZSTD,
         zip::Level::DEFAULT

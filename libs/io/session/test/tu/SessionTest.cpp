@@ -29,6 +29,7 @@
 #include <core/data/Composite.hpp>
 #include <core/data/Equipment.hpp>
 #include <core/data/Float.hpp>
+#include <core/data/Image.hpp>
 #include <core/data/Integer.hpp>
 #include <core/data/iterator/MeshIterators.hpp>
 #include <core/data/iterator/MeshIterators.hxx>
@@ -1112,14 +1113,14 @@ void SessionTest::arrayTest()
         array->resize(size, core::tools::Type::s_UINT8, true);
 
         // Fill
-        data::Array::Iterator<std::uint8_t> iter = array->begin<std::uint8_t>();
+        data::Array::Iterator<std::uint8_t> it = array->begin<std::uint8_t>();
 
         for(const auto& row : testVector)
         {
             for(const auto cell : row)
             {
-                *iter = cell;
-                ++iter;
+                *it = cell;
+                ++it;
             }
         }
 
@@ -1146,14 +1147,114 @@ void SessionTest::arrayTest()
         const auto& array = data::Array::dynamicCast(sessionReader->getObject());
         CPPUNIT_ASSERT(array);
 
-        data::Array::Iterator<std::uint8_t> iter = array->begin<std::uint8_t>();
+        data::Array::Iterator<std::uint8_t> it = array->begin<std::uint8_t>();
 
         for(const auto& row : testVector)
         {
             for(const auto cell : row)
             {
-                CPPUNIT_ASSERT_EQUAL(cell, *iter);
-                ++iter;
+                CPPUNIT_ASSERT_EQUAL(cell, *it);
+                ++it;
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::imageTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "imageTest.zip";
+
+    // Test vector
+    const auto testVector =
+        []
+        {
+            std::array<std::array<std::array<std::array<std::uint8_t, 3>, 4>, 5>, 6> tmp;
+            std::uint8_t index = 0;
+
+            for(auto& x : tmp)
+            {
+                for(auto& y : x)
+                {
+                    for(auto& z : y)
+                    {
+                        for(auto& component : z)
+                        {
+                            component = index++;
+                        }
+                    }
+                }
+            }
+
+            return tmp;
+        }();
+
+    // Test serialization
+    {
+        // Create the array
+        auto image = data::Image::New();
+
+        const core::tools::Type TYPE = core::tools::Type::s_UINT8;
+        const data::Image::Size SIZE = {4, 5, 6};
+
+        image->resize(SIZE, TYPE, data::Image::PixelFormat::RGB);
+
+        auto it = image->begin<data::iterator::RGB>();
+
+        for(auto& x : testVector)
+        {
+            for(auto& y : x)
+            {
+                for(auto& z : y)
+                {
+                    it->r = z.at(0);
+                    it->g = z.at(1);
+                    it->b = z.at(2);
+                    ++it;
+                }
+            }
+        }
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(image);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test values
+        const auto& image = data::Image::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(image);
+
+        auto it = image->begin<data::iterator::RGB>();
+
+        for(auto& x : testVector)
+        {
+            for(auto& y : x)
+            {
+                for(auto& z : y)
+                {
+                    CPPUNIT_ASSERT_EQUAL(z.at(0), it->r);
+                    CPPUNIT_ASSERT_EQUAL(z.at(1), it->g);
+                    CPPUNIT_ASSERT_EQUAL(z.at(2), it->b);
+                    ++it;
+                }
             }
         }
     }

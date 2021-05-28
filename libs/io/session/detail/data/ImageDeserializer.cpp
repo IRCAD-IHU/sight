@@ -19,17 +19,17 @@
  *
  ***********************************************************************/
 
-#include "MeshDeserializer.hpp"
+#include "ImageDeserializer.hpp"
+
+#include "io/vtk/vtk.hpp"
 
 #include <core/exceptionmacros.hpp>
 
-#include <data/Mesh.hpp>
+#include <data/Image.hpp>
 
-#include <io/vtk/helper/Mesh.hpp>
-
-#include <vtkPolyData.h>
+#include <vtkImageData.h>
 #include <vtkSmartPointer.h>
-#include <vtkXMLPolyDataReader.h>
+#include <vtkXMLImageDataReader.h>
 
 namespace sight::io::session
 {
@@ -39,7 +39,7 @@ namespace detail::data
 
 //------------------------------------------------------------------------------
 
-sight::data::Object::sptr MeshDeserializer::deserialize(
+sight::data::Object::sptr ImageDeserializer::deserialize(
     const zip::ArchiveReader::sptr& archive,
     const boost::property_tree::ptree& tree,
     const std::map<std::string, sight::data::Object::sptr>& children,
@@ -48,24 +48,24 @@ sight::data::Object::sptr MeshDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& mesh = object ? sight::data::Mesh::dynamicCast(object) : sight::data::Mesh::New();
+    const auto& image = object ? sight::data::Image::dynamicCast(object) : sight::data::Image::New();
 
     SIGHT_ASSERT(
-        "Object '" << mesh->getClassname() << "' is not a '" << sight::data::Mesh::classname() << "'",
-        mesh
+        "Object '" << image->getClassname() << "' is not a '" << sight::data::Image::classname() << "'",
+        image
     );
 
     // Check version number. Not mandatory, but could help for future release
     const int version = tree.get<int>("version", 0);
     SIGHT_THROW_IF(
-        MeshDeserializer::classname() << " is not implemented for version '" << version << "'.",
+        ImageDeserializer::classname() << " is not implemented for version '" << version << "'.",
         version > 1
     );
 
     // Create the istream from the input file inside the archive
     const auto& uuid    = tree.get<std::string>("uuid");
     const auto& istream = archive->openFile(
-        std::filesystem::path(uuid + "/mesh.vtp"),
+        std::filesystem::path(uuid + "/image.vti"),
         password
     );
 
@@ -73,15 +73,15 @@ sight::data::Object::sptr MeshDeserializer::deserialize(
     const std::string content {std::istreambuf_iterator<char>(*istream), std::istreambuf_iterator<char>()};
 
     // Create the vtk reader
-    const auto& vtkReader = vtkSmartPointer<vtkXMLPolyDataReader>::New();
+    const auto& vtkReader = vtkSmartPointer<vtkXMLImageDataReader>::New();
     vtkReader->ReadFromInputStringOn();
     vtkReader->SetInputString(content);
     vtkReader->Update();
 
     // Convert from VTK
-    io::vtk::helper::Mesh::fromVTKMesh(vtkReader->GetOutput(), mesh);
+    io::vtk::fromVTKImage(vtkReader->GetOutput(), image);
 
-    return mesh;
+    return image;
 }
 
 } // detail::data

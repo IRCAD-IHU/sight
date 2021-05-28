@@ -26,6 +26,7 @@
 #include "data/CompositeDeserializer.hpp"
 #include "data/EquipmentDeserializer.hpp"
 #include "data/GenericDeserializer.hpp"
+#include "data/ImageDeserializer.hpp"
 #include "data/MeshDeserializer.hpp"
 #include "data/PatientDeserializer.hpp"
 #include "data/SeriesDeserializer.hpp"
@@ -33,10 +34,12 @@
 #include "data/StudyDeserializer.hpp"
 
 #include <data/ActivitySeries.hpp>
+#include <data/Array.hpp>
 #include <data/Boolean.hpp>
 #include <data/Composite.hpp>
 #include <data/Equipment.hpp>
 #include <data/Float.hpp>
+#include <data/Image.hpp>
 #include <data/Integer.hpp>
 #include <data/Mesh.hpp>
 #include <data/mt/locked_ptr.hpp>
@@ -72,7 +75,8 @@ static const std::unordered_map<std::string, std::function<data::IDataDeserializ
     {sight::data::Study::classname(), &std::make_unique<data::StudyDeserializer>},
     {sight::data::Series::classname(), &std::make_unique<data::SeriesDeserializer>},
     {sight::data::ActivitySeries::classname(), &std::make_unique<data::ActivitySeriesDeserializer>},
-    {sight::data::Array::classname(), &std::make_unique<data::ArrayDeserializer>}
+    {sight::data::Array::classname(), &std::make_unique<data::ArrayDeserializer>},
+    {sight::data::Image::classname(), &std::make_unique<data::ImageDeserializer>}
 };
 
 // Return a writer from a data object class name
