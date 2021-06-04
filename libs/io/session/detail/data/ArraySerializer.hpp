@@ -36,7 +36,7 @@ class ArraySerializer : public IDataSerializer
 {
 public:
 
-    SIGHT_DECLARE_CLASS(ArraySerializer, IDataSerializer)
+    SIGHT_DECLARE_CLASS(ArraySerializer, IDataSerializer);
 
     /// Delete default copy constructors and assignment operators
     ArraySerializer(const ArraySerializer&)            = delete;

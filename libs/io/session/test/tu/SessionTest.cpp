@@ -37,6 +37,7 @@
 #include <core/data/Series.hpp>
 #include <core/data/String.hpp>
 #include <core/data/Study.hpp>
+#include <core/data/Vector.hpp>
 #include <core/tools/System.hpp>
 #include <core/tools/UUID.hpp>
 
@@ -1257,6 +1258,78 @@ void SessionTest::imageTest()
                 }
             }
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::vectorTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "vectorTest.zip";
+
+    const std::string stringValue(UUID::generateUUID());
+    const std::int64_t integerValue = 42;
+    const bool booleanValue         = true;
+    const float floatValue          = 3.141592653589793F;
+
+    // Test serialization
+    {
+        // Create vector
+        auto vector     = data::Vector::New();
+        auto& container = vector->getContainer();
+        container.push_back(data::String::New(stringValue));
+        container.push_back(data::Integer::New(integerValue));
+        container.push_back(data::Boolean::New(booleanValue));
+        container.push_back(data::Float::New(floatValue));
+        container.push_back(vector);
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(vector);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test value
+        const auto& vector = data::Vector::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(vector);
+
+        const auto& stringData = data::String::dynamicCast((*vector)[0]);
+        CPPUNIT_ASSERT(stringData);
+        CPPUNIT_ASSERT_EQUAL(stringValue, stringData->getValue());
+
+        const auto& integerData = data::Integer::dynamicCast((*vector)[1]);
+        CPPUNIT_ASSERT(integerData);
+        CPPUNIT_ASSERT_EQUAL(integerValue, integerData->getValue());
+
+        const auto& booleanData = data::Boolean::dynamicCast((*vector)[2]);
+        CPPUNIT_ASSERT(booleanData);
+        CPPUNIT_ASSERT_EQUAL(booleanValue, booleanData->getValue());
+
+        const auto& floatData = data::Float::dynamicCast((*vector)[3]);
+        CPPUNIT_ASSERT(floatData);
+        CPPUNIT_ASSERT_EQUAL(floatValue, floatData->getValue());
+
+        const auto& vectorData = data::Vector::dynamicCast((*vector)[4]);
+        CPPUNIT_ASSERT(vectorData);
+        const auto& vectorStringData = data::String::dynamicCast((*vectorData)[0]);
+        CPPUNIT_ASSERT(vectorStringData);
+        CPPUNIT_ASSERT_EQUAL(stringValue, vectorStringData->getValue());
     }
 }
 

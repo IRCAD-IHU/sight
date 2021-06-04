@@ -23,7 +23,7 @@
 #pragma once
 
 #include "io/session/config.hpp"
-#include "io/session/detail/data/IDataSerializer.hpp"
+#include "io/session/detail/data/IDataDeserializer.hpp"
 
 namespace sight::io::session
 {
@@ -32,30 +32,30 @@ namespace detail::data
 {
 
 /// Class used to serialize composite object to a session
-class ImageSerializer : public IDataSerializer
+class VectorDeserializer : public IDataDeserializer
 {
 public:
 
-    SIGHT_DECLARE_CLASS(ImageSerializer, IDataSerializer);
+    SIGHT_DECLARE_CLASS(VectorDeserializer, IDataDeserializer);
 
     /// Delete default copy constructors and assignment operators
-    ImageSerializer(const ImageSerializer&)            = delete;
-    ImageSerializer(ImageSerializer&&)                 = delete;
-    ImageSerializer& operator=(const ImageSerializer&) = delete;
-    ImageSerializer& operator=(ImageSerializer&&)      = delete;
+    VectorDeserializer(const VectorDeserializer&)            = delete;
+    VectorDeserializer(VectorDeserializer&&)                 = delete;
+    VectorDeserializer& operator=(const VectorDeserializer&) = delete;
+    VectorDeserializer& operator=(VectorDeserializer&&)      = delete;
 
     /// Default constructor
-    ImageSerializer() = default;
+    VectorDeserializer() = default;
 
     /// Default destructor
-    ~ImageSerializer() override = default;
+    ~VectorDeserializer() override = default;
 
-    /// Serialization function
-    void serialize(
-        const zip::ArchiveWriter::sptr& archive,
-        boost::property_tree::ptree& tree,
-        const sight::data::Object::csptr& object,
-        std::map<std::string, sight::data::Object::csptr>& children,
+    // Serialization function
+    sight::data::Object::sptr deserialize(
+        const zip::ArchiveReader::sptr& archive,
+        const boost::property_tree::ptree& tree,
+        const std::map<std::string, sight::data::Object::sptr>& children,
+        const sight::data::Object::sptr& object,
         const core::crypto::secure_string& password = ""
     ) const override;
 };

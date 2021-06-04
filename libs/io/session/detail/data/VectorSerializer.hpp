@@ -32,23 +32,23 @@ namespace detail::data
 {
 
 /// Class used to serialize composite object to a session
-class ImageSerializer : public IDataSerializer
+class VectorSerializer : public IDataSerializer
 {
 public:
 
-    SIGHT_DECLARE_CLASS(ImageSerializer, IDataSerializer);
+    SIGHT_DECLARE_CLASS(VectorSerializer, IDataSerializer);
 
     /// Delete default copy constructors and assignment operators
-    ImageSerializer(const ImageSerializer&)            = delete;
-    ImageSerializer(ImageSerializer&&)                 = delete;
-    ImageSerializer& operator=(const ImageSerializer&) = delete;
-    ImageSerializer& operator=(ImageSerializer&&)      = delete;
+    VectorSerializer(const VectorSerializer&)            = delete;
+    VectorSerializer(VectorSerializer&&)                 = delete;
+    VectorSerializer& operator=(const VectorSerializer&) = delete;
+    VectorSerializer& operator=(VectorSerializer&&)      = delete;
 
     /// Default constructor
-    ImageSerializer() = default;
+    VectorSerializer() = default;
 
     /// Default destructor
-    ~ImageSerializer() override = default;
+    ~VectorSerializer() override = default;
 
     /// Serialization function
     void serialize(

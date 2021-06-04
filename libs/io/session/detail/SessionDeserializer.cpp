@@ -32,6 +32,7 @@
 #include "data/SeriesDeserializer.hpp"
 #include "data/StringDeserializer.hpp"
 #include "data/StudyDeserializer.hpp"
+#include "data/VectorDeserializer.hpp"
 
 #include <data/ActivitySeries.hpp>
 #include <data/Array.hpp>
@@ -47,6 +48,7 @@
 #include <data/Series.hpp>
 #include <data/String.hpp>
 #include <data/Study.hpp>
+#include <data/Vector.hpp>
 
 #include <io/zip/ArchiveReader.hpp>
 
@@ -76,7 +78,8 @@ static const std::unordered_map<std::string, std::function<data::IDataDeserializ
     {sight::data::Series::classname(), &std::make_unique<data::SeriesDeserializer>},
     {sight::data::ActivitySeries::classname(), &std::make_unique<data::ActivitySeriesDeserializer>},
     {sight::data::Array::classname(), &std::make_unique<data::ArrayDeserializer>},
-    {sight::data::Image::classname(), &std::make_unique<data::ImageDeserializer>}
+    {sight::data::Image::classname(), &std::make_unique<data::ImageDeserializer>},
+    {sight::data::Vector::classname(), &std::make_unique<data::VectorDeserializer>}
 };
 
 // Return a writer from a data object class name
