@@ -34,6 +34,8 @@
 #include <core/data/iterator/MeshIterators.hpp>
 #include <core/data/iterator/MeshIterators.hxx>
 #include <core/data/Patient.hpp>
+#include <core/data/Point.hpp>
+#include <core/data/PointList.hpp>
 #include <core/data/Series.hpp>
 #include <core/data/String.hpp>
 #include <core/data/Study.hpp>
@@ -1330,6 +1332,151 @@ void SessionTest::vectorTest()
         const auto& vectorStringData = data::String::dynamicCast((*vectorData)[0]);
         CPPUNIT_ASSERT(vectorStringData);
         CPPUNIT_ASSERT_EQUAL(stringValue, vectorStringData->getValue());
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::pointTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "pointTest.zip";
+
+    const std::array<double, 3> coordinates = {
+        0.111111111111,
+        0.222222222222,
+        0.333333333333
+    };
+
+    // Test serialization
+    {
+        // Create vector
+        auto point = data::Point::New();
+        point->setCoord(coordinates);
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(point);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test value
+        const auto& point = data::Point::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(point);
+
+        const auto& coords = point->getCoord();
+        const auto EPSILON = std::numeric_limits<double>::epsilon();
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates[0], coords[0], EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates[1], coords[1], EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates[2], coords[2], EPSILON);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::pointListTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "pointListTest.zip";
+
+    const std::array<double, 3> coordinates1 = {
+        0.111111111111,
+        0.222222222222,
+        0.333333333333
+    };
+
+    const std::array<double, 3> coordinates2 = {
+        0.444444444444,
+        0.555555555555,
+        0.666666666666
+    };
+
+    const std::array<double, 3> coordinates3 = {
+        0.777777777777,
+        0.888888888888,
+        0.999999999999
+    };
+
+    // Test serialization
+    {
+        // Create vector
+        std::vector<data::Point::sptr> points;
+
+        auto point1 = data::Point::New();
+        point1->setCoord(coordinates1);
+        points.push_back(point1);
+
+        auto point2 = data::Point::New();
+        point2->setCoord(coordinates2);
+        points.push_back(point2);
+
+        auto point3 = data::Point::New();
+        point3->setCoord(coordinates3);
+        points.push_back(point3);
+
+        auto pointList = data::PointList::New();
+        pointList->setPoints(points);
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(pointList);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test value
+        const auto& pointList = data::PointList::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(pointList);
+
+        const auto& points = pointList->getPoints();
+        const auto EPSILON = std::numeric_limits<double>::epsilon();
+
+        const auto& point1  = points[0];
+        const auto& coords1 = point1->getCoord();
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates1[0], coords1[0], EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates1[1], coords1[1], EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates1[2], coords1[2], EPSILON);
+
+        const auto& point2  = points[1];
+        const auto& coords2 = point2->getCoord();
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates2[0], coords2[0], EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates2[1], coords2[1], EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates2[2], coords2[2], EPSILON);
+
+        const auto& point3  = points[2];
+        const auto& coords3 = point3->getCoord();
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[0], coords3[0], EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[1], coords3[1], EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[2], coords3[2], EPSILON);
     }
 }
 

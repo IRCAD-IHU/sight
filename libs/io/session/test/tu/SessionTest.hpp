@@ -32,23 +32,27 @@ namespace ut
 
 class SessionTest : public CPPUNIT_NS::TestFixture
 {
-CPPUNIT_TEST_SUITE(SessionTest);
-CPPUNIT_TEST(booleanTest);
-CPPUNIT_TEST(integerTest);
-CPPUNIT_TEST(floatTest);
-CPPUNIT_TEST(stringTest);
-CPPUNIT_TEST(circularTest);
-CPPUNIT_TEST(compositeTest);
-CPPUNIT_TEST(meshTest);
-CPPUNIT_TEST(equipmentTest);
-CPPUNIT_TEST(patientTest);
-CPPUNIT_TEST(studyTest);
-CPPUNIT_TEST(seriesTest);
-CPPUNIT_TEST(activitySeriesTest);
-CPPUNIT_TEST(arrayTest);
-CPPUNIT_TEST(imageTest);
-CPPUNIT_TEST(vectorTest);
-CPPUNIT_TEST_SUITE_END();
+public:
+
+    CPPUNIT_TEST_SUITE(SessionTest);
+    CPPUNIT_TEST(booleanTest);
+    CPPUNIT_TEST(integerTest);
+    CPPUNIT_TEST(floatTest);
+    CPPUNIT_TEST(stringTest);
+    CPPUNIT_TEST(circularTest);
+    CPPUNIT_TEST(compositeTest);
+    CPPUNIT_TEST(meshTest);
+    CPPUNIT_TEST(equipmentTest);
+    CPPUNIT_TEST(patientTest);
+    CPPUNIT_TEST(studyTest);
+    CPPUNIT_TEST(seriesTest);
+    CPPUNIT_TEST(activitySeriesTest);
+    CPPUNIT_TEST(arrayTest);
+    CPPUNIT_TEST(imageTest);
+    CPPUNIT_TEST(vectorTest);
+    CPPUNIT_TEST(pointTest);
+    CPPUNIT_TEST(pointListTest);
+    CPPUNIT_TEST_SUITE_END();
 
 public:
 
@@ -72,6 +76,8 @@ public:
     void arrayTest();
     void imageTest();
     void vectorTest();
+    void pointTest();
+    void pointListTest();
 };
 
 } // namespace ut

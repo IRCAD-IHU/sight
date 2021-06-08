@@ -31,3 +31,4 @@ CMakeSettings\.json
 .idea/
 # Just for the CI
 sight-git
+*.log

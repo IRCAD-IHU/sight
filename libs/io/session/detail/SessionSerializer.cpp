@@ -29,6 +29,8 @@
 #include "data/ImageSerializer.hpp"
 #include "data/MeshSerializer.hpp"
 #include "data/PatientSerializer.hpp"
+#include "data/PointListSerializer.hpp"
+#include "data/PointSerializer.hpp"
 #include "data/SeriesSerializer.hpp"
 #include "data/StringSerializer.hpp"
 #include "data/StudySerializer.hpp"
@@ -45,6 +47,8 @@
 #include <data/Mesh.hpp>
 #include <data/mt/locked_ptr.hpp>
 #include <data/Patient.hpp>
+#include <data/Point.hpp>
+#include <data/PointList.hpp>
 #include <data/Series.hpp>
 #include <data/String.hpp>
 #include <data/Study.hpp>
@@ -77,7 +81,9 @@ static const std::unordered_map<std::string, std::function<data::IDataSerializer
     {sight::data::ActivitySeries::classname(), &std::make_unique<data::ActivitySeriesSerializer>},
     {sight::data::Array::classname(), &std::make_unique<data::ArraySerializer>},
     {sight::data::Image::classname(), &std::make_unique<data::ImageSerializer>},
-    {sight::data::Vector::classname(), &std::make_unique<data::VectorSerializer>}
+    {sight::data::Vector::classname(), &std::make_unique<data::VectorSerializer>},
+    {sight::data::Point::classname(), &std::make_unique<data::PointSerializer>},
+    {sight::data::PointList::classname(), &std::make_unique<data::PointListSerializer>}
 };
 
 // Return a writer from a data object class name

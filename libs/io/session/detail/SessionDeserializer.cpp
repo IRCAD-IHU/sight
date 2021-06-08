@@ -29,6 +29,8 @@
 #include "data/ImageDeserializer.hpp"
 #include "data/MeshDeserializer.hpp"
 #include "data/PatientDeserializer.hpp"
+#include "data/PointDeserializer.hpp"
+#include "data/PointListDeserializer.hpp"
 #include "data/SeriesDeserializer.hpp"
 #include "data/StringDeserializer.hpp"
 #include "data/StudyDeserializer.hpp"
@@ -45,6 +47,8 @@
 #include <data/Mesh.hpp>
 #include <data/mt/locked_ptr.hpp>
 #include <data/Patient.hpp>
+#include <data/Point.hpp>
+#include <data/PointList.hpp>
 #include <data/Series.hpp>
 #include <data/String.hpp>
 #include <data/Study.hpp>
@@ -79,7 +83,9 @@ static const std::unordered_map<std::string, std::function<data::IDataDeserializ
     {sight::data::ActivitySeries::classname(), &std::make_unique<data::ActivitySeriesDeserializer>},
     {sight::data::Array::classname(), &std::make_unique<data::ArrayDeserializer>},
     {sight::data::Image::classname(), &std::make_unique<data::ImageDeserializer>},
-    {sight::data::Vector::classname(), &std::make_unique<data::VectorDeserializer>}
+    {sight::data::Vector::classname(), &std::make_unique<data::VectorDeserializer>},
+    {sight::data::Point::classname(), &std::make_unique<data::PointDeserializer>},
+    {sight::data::PointList::classname(), &std::make_unique<data::PointListDeserializer>}
 };
 
 // Return a writer from a data object class name
