@@ -23,6 +23,7 @@
 
 #include "data/ActivitySeriesSerializer.hpp"
 #include "data/ArraySerializer.hpp"
+#include "data/CalibrationInfoSerializer.hpp"
 #include "data/CompositeSerializer.hpp"
 #include "data/EquipmentSerializer.hpp"
 #include "data/GenericSerializer.hpp"
@@ -39,6 +40,7 @@
 #include <data/ActivitySeries.hpp>
 #include <data/Array.hpp>
 #include <data/Boolean.hpp>
+#include <data/CalibrationInfo.hpp>
 #include <data/Composite.hpp>
 #include <data/Equipment.hpp>
 #include <data/Float.hpp>
@@ -83,7 +85,8 @@ static const std::unordered_map<std::string, std::function<data::IDataSerializer
     {sight::data::Image::classname(), &std::make_unique<data::ImageSerializer>},
     {sight::data::Vector::classname(), &std::make_unique<data::VectorSerializer>},
     {sight::data::Point::classname(), &std::make_unique<data::PointSerializer>},
-    {sight::data::PointList::classname(), &std::make_unique<data::PointListSerializer>}
+    {sight::data::PointList::classname(), &std::make_unique<data::PointListSerializer>},
+    {sight::data::CalibrationInfo::classname(), &std::make_unique<data::CalibrationInfoSerializer>}
 };
 
 // Return a writer from a data object class name

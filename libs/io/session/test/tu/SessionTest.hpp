@@ -52,6 +52,7 @@ public:
     CPPUNIT_TEST(vectorTest);
     CPPUNIT_TEST(pointTest);
     CPPUNIT_TEST(pointListTest);
+    CPPUNIT_TEST(calibrationInfoTest);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -78,6 +79,7 @@ public:
     void vectorTest();
     void pointTest();
     void pointListTest();
+    void calibrationInfoTest();
 };
 
 } // namespace ut

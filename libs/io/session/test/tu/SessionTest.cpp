@@ -26,6 +26,7 @@
 #include <core/data/ActivitySeries.hpp>
 #include <core/data/Array.hpp>
 #include <core/data/Boolean.hpp>
+#include <core/data/CalibrationInfo.hpp>
 #include <core/data/Composite.hpp>
 #include <core/data/Equipment.hpp>
 #include <core/data/Float.hpp>
@@ -1198,7 +1199,7 @@ void SessionTest::imageTest()
 
     // Test serialization
     {
-        // Create the array
+        // Create the image
         auto image = data::Image::New();
 
         const core::tools::Type TYPE = core::tools::Type::s_UINT8;
@@ -1477,6 +1478,153 @@ void SessionTest::pointListTest()
         CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[0], coords3[0], EPSILON);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[1], coords3[1], EPSILON);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[2], coords3[2], EPSILON);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::calibrationInfoTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "calibrationInfoTest.zip";
+
+    // Images data
+    const auto imagesData =
+        []
+        {
+            std::array<std::array<std::array<std::array<std::uint8_t, 3>, 3>, 3>, 3> tmp;
+            std::uint8_t index = 0;
+
+            for(auto& image : tmp)
+            {
+                for(auto& x : image)
+                {
+                    for(auto& y : x)
+                    {
+                        for(auto& component : y)
+                        {
+                            component = index++;
+                        }
+                    }
+                }
+            }
+
+            return tmp;
+        }();
+
+    // PointLists data
+    const auto pointListsData =
+        []
+        {
+            std::array<std::array<std::array<double, 3>, 3>, 3> tmp;
+            double pi = 3.141592653589793;
+
+            for(auto& pointList : tmp)
+            {
+                for(auto& point : pointList)
+                {
+                    for(auto& coord : point)
+                    {
+                        coord = pi++;
+                    }
+                }
+            }
+
+            return tmp;
+        }();
+
+    // Test serialization
+    {
+        auto calibrationInfo = data::CalibrationInfo::New();
+
+        for(std::size_t i = 0 ; i < 3 ; ++i)
+        {
+            // Create the image
+            auto image = data::Image::New();
+
+            const core::tools::Type TYPE = core::tools::Type::s_UINT8;
+            const data::Image::Size SIZE = {3, 3};
+
+            image->resize(SIZE, TYPE, data::Image::PixelFormat::RGB);
+            auto it = image->begin<data::iterator::RGB>();
+
+            for(auto& x : imagesData[i])
+            {
+                for(auto& y : x)
+                {
+                    it->r = y.at(0);
+                    it->g = y.at(1);
+                    it->b = y.at(2);
+                    ++it;
+                }
+            }
+
+            auto pointList = data::PointList::New();
+
+            // Create the point list
+            for(auto& pointData : pointListsData[i])
+            {
+                auto point = data::Point::New();
+                point->setCoord(pointData);
+                pointList->pushBack(point);
+            }
+
+            calibrationInfo->addRecord(image, pointList);
+        }
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(calibrationInfo);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test value
+        const auto& calibrationInfo = data::CalibrationInfo::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(calibrationInfo);
+
+        for(std::size_t i = 0 ; i < 3 ; ++i)
+        {
+            const auto& image = calibrationInfo->getImage(i);
+            auto it           = image->begin<data::iterator::RGB>();
+
+            for(auto& x : imagesData[i])
+            {
+                for(auto& y : x)
+                {
+                    CPPUNIT_ASSERT_EQUAL(y.at(0), it->r);
+                    CPPUNIT_ASSERT_EQUAL(y.at(1), it->g);
+                    CPPUNIT_ASSERT_EQUAL(y.at(2), it->b);
+                    ++it;
+                }
+            }
+
+            const auto& pointList = calibrationInfo->getPointList(image);
+            const auto& points    = pointList->getPoints();
+            const auto EPSILON    = std::numeric_limits<double>::epsilon();
+
+            for(std::size_t j = 0 ; j < 3 ; ++j)
+            {
+                const auto& coord = points[j]->getCoord();
+                CPPUNIT_ASSERT_DOUBLES_EQUAL(pointListsData[i][j][0], coord[0], EPSILON);
+                CPPUNIT_ASSERT_DOUBLES_EQUAL(pointListsData[i][j][1], coord[1], EPSILON);
+                CPPUNIT_ASSERT_DOUBLES_EQUAL(pointListsData[i][j][2], coord[2], EPSILON);
+            }
+        }
     }
 }
 
