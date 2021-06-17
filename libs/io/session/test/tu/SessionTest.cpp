@@ -27,6 +27,7 @@
 #include <core/data/Array.hpp>
 #include <core/data/Boolean.hpp>
 #include <core/data/CalibrationInfo.hpp>
+#include <core/data/Camera.hpp>
 #include <core/data/Composite.hpp>
 #include <core/data/Equipment.hpp>
 #include <core/data/Float.hpp>
@@ -58,6 +59,9 @@
 
 // Registers the fixture into the 'registry'
 CPPUNIT_TEST_SUITE_REGISTRATION(::sight::io::session::ut::SessionTest);
+
+static const double DOUBLE_EPSILON = std::numeric_limits<double>::epsilon();
+static const float FLOAT_EPSILON   = std::numeric_limits<float>::epsilon();
 
 namespace sight::io::session
 {
@@ -476,24 +480,24 @@ void SessionTest::meshTest()
 
         for( ; originalIt != originalEnd && meshIt != meshEnd ; ++originalIt, ++meshIt)
         {
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalIt->point->x, meshIt->point->x, std::numeric_limits<float>::epsilon());
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalIt->point->y, meshIt->point->y, std::numeric_limits<float>::epsilon());
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalIt->point->z, meshIt->point->z, std::numeric_limits<float>::epsilon());
+            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalIt->point->x, meshIt->point->x, FLOAT_EPSILON);
+            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalIt->point->y, meshIt->point->y, FLOAT_EPSILON);
+            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalIt->point->z, meshIt->point->z, FLOAT_EPSILON);
 
             CPPUNIT_ASSERT_DOUBLES_EQUAL(
                 originalIt->normal->nx,
                 meshIt->normal->nx,
-                std::numeric_limits<float>::epsilon()
+                FLOAT_EPSILON
             );
             CPPUNIT_ASSERT_DOUBLES_EQUAL(
                 originalIt->normal->ny,
                 meshIt->normal->ny,
-                std::numeric_limits<float>::epsilon()
+                FLOAT_EPSILON
             );
             CPPUNIT_ASSERT_DOUBLES_EQUAL(
                 originalIt->normal->nz,
                 meshIt->normal->nz,
-                std::numeric_limits<float>::epsilon()
+                FLOAT_EPSILON
             );
         }
     }
@@ -1381,10 +1385,9 @@ void SessionTest::pointTest()
         CPPUNIT_ASSERT(point);
 
         const auto& coords = point->getCoord();
-        const auto EPSILON = std::numeric_limits<double>::epsilon();
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates[0], coords[0], EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates[1], coords[1], EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates[2], coords[2], EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates[0], coords[0], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates[1], coords[1], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates[2], coords[2], DOUBLE_EPSILON);
     }
 }
 
@@ -1458,26 +1461,24 @@ void SessionTest::pointListTest()
         const auto& pointList = data::PointList::dynamicCast(sessionReader->getObject());
         CPPUNIT_ASSERT(pointList);
 
-        const auto& points = pointList->getPoints();
-        const auto EPSILON = std::numeric_limits<double>::epsilon();
-
+        const auto& points  = pointList->getPoints();
         const auto& point1  = points[0];
         const auto& coords1 = point1->getCoord();
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates1[0], coords1[0], EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates1[1], coords1[1], EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates1[2], coords1[2], EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates1[0], coords1[0], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates1[1], coords1[1], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates1[2], coords1[2], DOUBLE_EPSILON);
 
         const auto& point2  = points[1];
         const auto& coords2 = point2->getCoord();
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates2[0], coords2[0], EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates2[1], coords2[1], EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates2[2], coords2[2], EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates2[0], coords2[0], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates2[1], coords2[1], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates2[2], coords2[2], DOUBLE_EPSILON);
 
         const auto& point3  = points[2];
         const auto& coords3 = point3->getCoord();
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[0], coords3[0], EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[1], coords3[1], EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[2], coords3[2], EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[0], coords3[0], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[1], coords3[1], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[2], coords3[2], DOUBLE_EPSILON);
     }
 }
 
@@ -1615,16 +1616,124 @@ void SessionTest::calibrationInfoTest()
 
             const auto& pointList = calibrationInfo->getPointList(image);
             const auto& points    = pointList->getPoints();
-            const auto EPSILON    = std::numeric_limits<double>::epsilon();
 
             for(std::size_t j = 0 ; j < 3 ; ++j)
             {
                 const auto& coord = points[j]->getCoord();
-                CPPUNIT_ASSERT_DOUBLES_EQUAL(pointListsData[i][j][0], coord[0], EPSILON);
-                CPPUNIT_ASSERT_DOUBLES_EQUAL(pointListsData[i][j][1], coord[1], EPSILON);
-                CPPUNIT_ASSERT_DOUBLES_EQUAL(pointListsData[i][j][2], coord[2], EPSILON);
+                CPPUNIT_ASSERT_DOUBLES_EQUAL(pointListsData[i][j][0], coord[0], DOUBLE_EPSILON);
+                CPPUNIT_ASSERT_DOUBLES_EQUAL(pointListsData[i][j][1], coord[1], DOUBLE_EPSILON);
+                CPPUNIT_ASSERT_DOUBLES_EQUAL(pointListsData[i][j][2], coord[2], DOUBLE_EPSILON);
             }
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::cameraTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "cameraTest.zip";
+
+    // Test data
+    const size_t width  = 111;
+    const size_t height = 222;
+
+    const double fx = 0.0000001;
+    const double fy = 0.0000002;
+    const double cx = 0.0000003;
+    const double cy = 0.0000004;
+
+    const double k1 = 0.0000005;
+    const double k2 = 0.0000006;
+    const double p1 = 0.0000007;
+    const double p2 = 0.0000008;
+    const double k3 = 0.0000009;
+
+    const double skew       = 0.0000010;
+    const bool isCalibrated = true;
+
+    const std::string description(UUID::generateUUID());
+    const std::string cameraID(UUID::generateUUID());
+    const float maxFrameRate                    = 666.66F;
+    const data::Camera::PixelFormat pixelFormat = data::Camera::PixelFormat::ARGB8565_PREMULTIPLIED;
+    const std::filesystem::path videoFile       = "/tmp/superman fait du vélo.mp4";
+    const std::string streamUrl(UUID::generateUUID());
+    const data::Camera::SourceType cameraSource = data::Camera::SourceType::UNKNOWN;
+    const double scale                          = 0.123456789;
+
+    // Test serialization
+    {
+        auto camera = data::Camera::New();
+
+        camera->setWidth(width);
+        camera->setHeight(height);
+        camera->setFx(fx);
+        camera->setFy(fy);
+        camera->setCx(cx);
+        camera->setCy(cy);
+        camera->setDistortionCoefficient(k1, k2, p1, p2, k3);
+        camera->setSkew(skew);
+        camera->setIsCalibrated(isCalibrated);
+        camera->setDescription(description);
+        camera->setCameraID(cameraID);
+        camera->setMaximumFrameRate(maxFrameRate);
+        camera->setPixelFormat(pixelFormat);
+        camera->setVideoFile(videoFile);
+        camera->setStreamUrl(streamUrl);
+        camera->setCameraSource(cameraSource);
+        camera->setScale(scale);
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(camera);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test value
+        const auto& camera = data::Camera::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(camera);
+
+        CPPUNIT_ASSERT_EQUAL(width, camera->getWidth());
+        CPPUNIT_ASSERT_EQUAL(height, camera->getHeight());
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(fx, camera->getFx(), DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(fy, camera->getFx(), DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(cx, camera->getFx(), DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(cy, camera->getFx(), DOUBLE_EPSILON);
+
+        const auto& distortionCoefficient = camera->getDistortionCoefficient();
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(k1, distortionCoefficient[0], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(k2, distortionCoefficient[1], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(p1, distortionCoefficient[2], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(p2, distortionCoefficient[3], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(k3, distortionCoefficient[4], DOUBLE_EPSILON);
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(skew, camera->getSkew(), DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_EQUAL(isCalibrated, camera->getIsCalibrated());
+        CPPUNIT_ASSERT_EQUAL(description, camera->getDescription());
+        CPPUNIT_ASSERT_EQUAL(cameraID, camera->getCameraID());
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(maxFrameRate, camera->getMaximumFrameRate(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_EQUAL(pixelFormat, camera->getPixelFormat());
+        CPPUNIT_ASSERT_EQUAL(videoFile, camera->getVideoFile());
+        CPPUNIT_ASSERT_EQUAL(streamUrl, camera->getStreamUrl());
+        CPPUNIT_ASSERT_EQUAL(cameraSource, camera->getCameraSource());
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(scale, camera->getScale(), DOUBLE_EPSILON);
     }
 }
 
