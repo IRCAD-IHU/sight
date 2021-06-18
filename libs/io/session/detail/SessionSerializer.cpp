@@ -33,9 +33,11 @@
 #include "data/GenericSerializer.hpp"
 #include "data/ImageSerializer.hpp"
 #include "data/MeshSerializer.hpp"
+#include "data/NodeSerializer.hpp"
 #include "data/PatientSerializer.hpp"
 #include "data/PointListSerializer.hpp"
 #include "data/PointSerializer.hpp"
+#include "data/PortSerializer.hpp"
 #include "data/SeriesSerializer.hpp"
 #include "data/StringSerializer.hpp"
 #include "data/StudySerializer.hpp"
@@ -56,9 +58,11 @@
 #include <data/Integer.hpp>
 #include <data/Mesh.hpp>
 #include <data/mt/locked_ptr.hpp>
+#include <data/Node.hpp>
 #include <data/Patient.hpp>
 #include <data/Point.hpp>
 #include <data/PointList.hpp>
+#include <data/Port.hpp>
 #include <data/Series.hpp>
 #include <data/String.hpp>
 #include <data/Study.hpp>
@@ -98,7 +102,9 @@ static const std::unordered_map<std::string, std::function<data::IDataSerializer
     {sight::data::Camera::classname(), &std::make_unique<data::CameraSerializer>},
     {sight::data::CameraSeries::classname(), &std::make_unique<data::CameraSeriesSerializer>},
     {sight::data::Color::classname(), &std::make_unique<data::ColorSerializer>},
-    {sight::data::Edge::classname(), &std::make_unique<data::EdgeSerializer>}
+    {sight::data::Edge::classname(), &std::make_unique<data::EdgeSerializer>},
+    {sight::data::Port::classname(), &std::make_unique<data::PortSerializer>},
+    {sight::data::Node::classname(), &std::make_unique<data::NodeSerializer>}
 };
 
 // Return a writer from a data object class name

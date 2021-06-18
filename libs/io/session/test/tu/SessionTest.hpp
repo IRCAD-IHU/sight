@@ -57,6 +57,8 @@ public:
     CPPUNIT_TEST(cameraSeriesTest);
     CPPUNIT_TEST(colorTest);
     CPPUNIT_TEST(edgeTest);
+    CPPUNIT_TEST(portTest);
+    CPPUNIT_TEST(nodeTest);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -88,6 +90,8 @@ public:
     void cameraSeriesTest();
     void colorTest();
     void edgeTest();
+    void portTest();
+    void nodeTest();
 };
 
 } // namespace ut

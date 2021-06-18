@@ -33,9 +33,11 @@
 #include "data/GenericDeserializer.hpp"
 #include "data/ImageDeserializer.hpp"
 #include "data/MeshDeserializer.hpp"
+#include "data/NodeDeserializer.hpp"
 #include "data/PatientDeserializer.hpp"
 #include "data/PointDeserializer.hpp"
 #include "data/PointListDeserializer.hpp"
+#include "data/PortDeserializer.hpp"
 #include "data/SeriesDeserializer.hpp"
 #include "data/StringDeserializer.hpp"
 #include "data/StudyDeserializer.hpp"
@@ -56,9 +58,11 @@
 #include <data/Integer.hpp>
 #include <data/Mesh.hpp>
 #include <data/mt/locked_ptr.hpp>
+#include <data/Node.hpp>
 #include <data/Patient.hpp>
 #include <data/Point.hpp>
 #include <data/PointList.hpp>
+#include <data/Port.hpp>
 #include <data/Series.hpp>
 #include <data/String.hpp>
 #include <data/Study.hpp>
@@ -100,7 +104,9 @@ static const std::unordered_map<std::string, std::function<data::IDataDeserializ
     {sight::data::Camera::classname(), &std::make_unique<data::CameraDeserializer>},
     {sight::data::CameraSeries::classname(), &std::make_unique<data::CameraSeriesDeserializer>},
     {sight::data::Color::classname(), &std::make_unique<data::ColorDeserializer>},
-    {sight::data::Edge::classname(), &std::make_unique<data::EdgeDeserializer>}
+    {sight::data::Edge::classname(), &std::make_unique<data::EdgeDeserializer>},
+    {sight::data::Port::classname(), &std::make_unique<data::PortDeserializer>},
+    {sight::data::Node::classname(), &std::make_unique<data::NodeDeserializer>}
 };
 
 // Return a writer from a data object class name

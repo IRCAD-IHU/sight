@@ -38,9 +38,11 @@
 #include <core/data/Integer.hpp>
 #include <core/data/iterator/MeshIterators.hpp>
 #include <core/data/iterator/MeshIterators.hxx>
+#include <core/data/Node.hpp>
 #include <core/data/Patient.hpp>
 #include <core/data/Point.hpp>
 #include <core/data/PointList.hpp>
+#include <core/data/Port.hpp>
 #include <core/data/Series.hpp>
 #include <core/data/String.hpp>
 #include <core/data/Study.hpp>
@@ -1108,12 +1110,13 @@ void SessionTest::arrayTest()
     const std::filesystem::path testPath = tmpfolder / "arrayTest.zip";
 
     // Test vector
-    const std::array<std::array<std::uint8_t, 3>, 4> testVector = {{
-        {0, 1, 1},
-        {2, 3, 5},
-        {8, 13, 21},
-        {34, 55, 89}
-    }
+    const std::array<std::array<std::uint8_t, 3>, 4> testVector = {
+        {{0, 1, 1},
+            {2, 3, 5},
+            {8, 13, 21},
+            {34, 55, 89
+            }
+        }
     };
 
     // Test serialization
@@ -1896,6 +1899,150 @@ void SessionTest::edgeTest()
         CPPUNIT_ASSERT_EQUAL(from, edge->getFromPortID());
         CPPUNIT_ASSERT_EQUAL(to, edge->getToPortID());
         CPPUNIT_ASSERT_EQUAL(nature, edge->getNature());
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::portTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "portTest.zip";
+
+    const std::string identifier(UUID::generateUUID());
+    const std::string type(UUID::generateUUID());
+
+    // Test serialization
+    {
+        // Create vector
+        auto port = data::Port::New();
+        port->setIdentifier(identifier);
+        port->setType(type);
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(port);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test value
+        const auto& port = data::Port::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(port);
+
+        CPPUNIT_ASSERT_EQUAL(identifier, port->getIdentifier());
+        CPPUNIT_ASSERT_EQUAL(type, port->getType());
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::nodeTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "nodeTest.zip";
+
+    // Test vector
+    const std::string object(UUID::generateUUID());
+
+    std::array<std::array<std::string, 2>, 3> inputs = {
+        {{UUID::generateUUID(), UUID::generateUUID()},
+            {UUID::generateUUID(), UUID::generateUUID()},
+            {UUID::generateUUID(), UUID::generateUUID()
+            }
+        }
+    };
+
+    std::array<std::array<std::string, 2>, 3> outputs = {
+        {{UUID::generateUUID(), UUID::generateUUID()},
+            {UUID::generateUUID(), UUID::generateUUID()},
+            {UUID::generateUUID(), UUID::generateUUID()
+            }
+        }
+    };
+
+    // Test serialization
+    {
+        // Create node
+        auto node = data::Node::New();
+        node->setObject(data::String::New(object));
+
+        for(const auto& input : inputs)
+        {
+            auto inputPort = data::Port::New();
+            inputPort->setIdentifier(input[0]);
+            inputPort->setType(input[1]);
+            node->addInputPort(inputPort);
+        }
+
+        for(const auto& output : outputs)
+        {
+            auto outputPort = data::Port::New();
+            outputPort->setIdentifier(output[0]);
+            outputPort->setType(output[1]);
+            node->addOutputPort(outputPort);
+        }
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(node);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test values
+        const auto& node = data::Node::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(node);
+
+        const auto& stringObject = data::String::dynamicCast(node->getObject());
+        CPPUNIT_ASSERT(stringObject);
+        CPPUNIT_ASSERT_EQUAL(object, stringObject->getValue());
+
+        const auto& inputPorts = node->getInputPorts();
+        CPPUNIT_ASSERT_EQUAL(inputs.size(), inputPorts.size());
+
+        for(size_t index = 0, end = inputPorts.size() ; index < end ; ++index)
+        {
+            CPPUNIT_ASSERT_EQUAL(inputs[index][0], inputPorts[index]->getIdentifier());
+            CPPUNIT_ASSERT_EQUAL(inputs[index][1], inputPorts[index]->getType());
+        }
+
+        const auto& outputPorts = node->getOutputPorts();
+        CPPUNIT_ASSERT_EQUAL(outputs.size(), outputPorts.size());
+
+        for(size_t index = 0, end = outputPorts.size() ; index < end ; ++index)
+        {
+            CPPUNIT_ASSERT_EQUAL(outputs[index][0], outputPorts[index]->getIdentifier());
+            CPPUNIT_ASSERT_EQUAL(outputs[index][1], outputPorts[index]->getType());
+        }
     }
 }
 
