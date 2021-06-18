@@ -22,6 +22,7 @@
 #include "StringDeserializer.hpp"
 
 #include <core/crypto/Base64.hpp>
+#include <core/exceptionmacros.hpp>
 
 namespace sight::io::session
 {
@@ -32,22 +33,21 @@ namespace detail::data
 //------------------------------------------------------------------------------
 
 sight::data::Object::sptr StringDeserializer::deserialize(
-    const zip::ArchiveReader::sptr& archive,
+    const zip::ArchiveReader::sptr&,
     const boost::property_tree::ptree& tree,
-    const std::map<std::string, sight::data::Object::sptr>& children,
+    const std::map<std::string, sight::data::Object::sptr>&,
     const sight::data::Object::sptr& object,
-    const core::crypto::secure_string& password
+    const core::crypto::secure_string&
 ) const
 {
     // Create or reuse the object
-    const auto& string = object ? sight::data::String::dynamicCast(object) : sight::data::String::New();
-    SIGHT_ASSERT(
-        "Object '" << string->getClassname() << "' is not a '" << sight::data::String::classname() << "'",
-        string
-    );
+    const auto& string = IDataDeserializer::safeCast<sight::data::String>(object);
+
+    // Check version number. Not mandatory, but could help for future release
+    IDataDeserializer::readVersion<sight::data::String>(tree, 0, 1);
 
     // Assign the value
-    string->setValue(readFromTree(tree, "Value"));
+    string->setValue(readString(tree, "Value"));
 
     return string;
 }

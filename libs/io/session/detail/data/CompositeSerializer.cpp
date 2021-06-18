@@ -31,22 +31,17 @@ namespace detail::data
 
 /// Serialization function
 void CompositeSerializer::serialize(
-    const zip::ArchiveWriter::sptr& archive,
+    const zip::ArchiveWriter::sptr&,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
     std::map<std::string, sight::data::Object::csptr>& children,
-    const core::crypto::secure_string& password
+    const core::crypto::secure_string&
 ) const
 {
-    const auto& composite = sight::data::Composite::dynamicCast(object);
-    SIGHT_ASSERT(
-        "Object '"
-        << (object ? object->getClassname() : sight::data::Object::classname())
-        << "' is not a '"
-        << sight::data::Composite::classname()
-        << "'",
-        composite
-    );
+    const auto& composite = IDataSerializer::safeCast<sight::data::Composite>(object);
+
+    // Add a version number. Not mandatory, but could help for future release
+    IDataSerializer::writeVersion<sight::data::Composite>(tree, 1);
 
     // Composite is map of child object..
     const auto& container = composite->getContainer();

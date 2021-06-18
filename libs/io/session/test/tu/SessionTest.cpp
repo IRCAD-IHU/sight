@@ -28,6 +28,7 @@
 #include <core/data/Boolean.hpp>
 #include <core/data/CalibrationInfo.hpp>
 #include <core/data/Camera.hpp>
+#include <core/data/CameraSeries.hpp>
 #include <core/data/Composite.hpp>
 #include <core/data/Equipment.hpp>
 #include <core/data/Float.hpp>
@@ -1713,9 +1714,9 @@ void SessionTest::cameraTest()
         CPPUNIT_ASSERT_EQUAL(height, camera->getHeight());
 
         CPPUNIT_ASSERT_DOUBLES_EQUAL(fx, camera->getFx(), DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(fy, camera->getFx(), DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(cx, camera->getFx(), DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(cy, camera->getFx(), DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(fy, camera->getFy(), DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(cx, camera->getCx(), DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(cy, camera->getCy(), DOUBLE_EPSILON);
 
         const auto& distortionCoefficient = camera->getDistortionCoefficient();
         CPPUNIT_ASSERT_DOUBLES_EQUAL(k1, distortionCoefficient[0], DOUBLE_EPSILON);
@@ -1734,6 +1735,64 @@ void SessionTest::cameraTest()
         CPPUNIT_ASSERT_EQUAL(streamUrl, camera->getStreamUrl());
         CPPUNIT_ASSERT_EQUAL(cameraSource, camera->getCameraSource());
         CPPUNIT_ASSERT_DOUBLES_EQUAL(scale, camera->getScale(), DOUBLE_EPSILON);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::cameraSeriesTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "cameraSeriesTest.zip";
+
+    // Test data
+    const std::array<std::string, 3> cameraIDs = {
+        UUID::generateUUID(),
+        UUID::generateUUID(),
+        UUID::generateUUID()
+    };
+
+    // Test serialization
+    {
+        auto cameraSeries = data::CameraSeries::New();
+
+        for(const auto& cameraID : cameraIDs)
+        {
+            const auto& camera = data::Camera::New();
+            camera->setCameraID(cameraID);
+            cameraSeries->addCamera(camera);
+        }
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(cameraSeries);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test value
+        const auto& cameraSeries = data::CameraSeries::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(cameraSeries);
+
+        for(size_t i = 0, end = cameraSeries->getNumberOfCameras() ; i < end ; ++i)
+        {
+            const auto& camera = cameraSeries->getCamera(i);
+            CPPUNIT_ASSERT_EQUAL(cameraIDs[i], camera->getCameraID());
+        }
     }
 }
 

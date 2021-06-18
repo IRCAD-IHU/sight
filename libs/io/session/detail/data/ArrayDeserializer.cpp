@@ -36,25 +36,16 @@ namespace detail::data
 sight::data::Object::sptr ArrayDeserializer::deserialize(
     const zip::ArchiveReader::sptr& archive,
     const boost::property_tree::ptree& tree,
-    const std::map<std::string, sight::data::Object::sptr>& children,
+    const std::map<std::string, sight::data::Object::sptr>&,
     const sight::data::Object::sptr& object,
     const core::crypto::secure_string& password
 ) const
 {
     // Create or reuse the object
-    const auto& array = object ? sight::data::Array::dynamicCast(object) : sight::data::Array::New();
-
-    SIGHT_ASSERT(
-        "Object '" << array->getClassname() << "' is not a '" << sight::data::Array::classname() << "'",
-        array
-    );
+    const auto& array = IDataDeserializer::safeCast<sight::data::Array>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    const int version = tree.get<int>("version", 0);
-    SIGHT_THROW_IF(
-        ArrayDeserializer::classname() << " is not implemented for version '" << version << "'.",
-        version > 1
-    );
+    IDataDeserializer::readVersion<sight::data::Array>(tree, 0, 1);
 
     // Type
     array->setType(tree.get<std::string>("Type"));

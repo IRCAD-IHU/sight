@@ -34,24 +34,14 @@ void ArraySerializer::serialize(
     const zip::ArchiveWriter::sptr& archive,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
-    std::map<std::string, sight::data::Object::csptr>& children,
+    std::map<std::string, sight::data::Object::csptr>&,
     const core::crypto::secure_string& password
 ) const
 {
-    const auto& array = sight::data::Array::dynamicCast(object);
-    SIGHT_ASSERT(
-        "Object '"
-        << (object ? object->getClassname() : sight::data::Object::classname())
-        << "' is not a '"
-        << sight::data::Array::classname()
-        << "'",
-        array
-    );
+    const auto& array = IDataSerializer::safeCast<sight::data::Array>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    tree.put("version", 1);
-
-    // Serialize members
+    IDataSerializer::writeVersion<sight::data::Array>(tree, 1);
 
     // Size
     boost::property_tree::ptree sizesTree;

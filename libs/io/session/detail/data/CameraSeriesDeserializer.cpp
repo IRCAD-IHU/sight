@@ -19,17 +19,13 @@
  *
  ***********************************************************************/
 
-#include "MeshDeserializer.hpp"
+#include "CameraSeriesDeserializer.hpp"
+
+#include "SeriesDeserializer.hpp"
 
 #include <core/exceptionmacros.hpp>
 
-#include <data/Mesh.hpp>
-
-#include <io/vtk/helper/Mesh.hpp>
-
-#include <vtkPolyData.h>
-#include <vtkSmartPointer.h>
-#include <vtkXMLPolyDataReader.h>
+#include <data/CameraSeries.hpp>
 
 namespace sight::io::session
 {
@@ -39,40 +35,40 @@ namespace detail::data
 
 //------------------------------------------------------------------------------
 
-sight::data::Object::sptr MeshDeserializer::deserialize(
+sight::data::Object::sptr CameraSeriesDeserializer::deserialize(
     const zip::ArchiveReader::sptr& archive,
     const boost::property_tree::ptree& tree,
-    const std::map<std::string, sight::data::Object::sptr>&,
+    const std::map<std::string, sight::data::Object::sptr>& children,
     const sight::data::Object::sptr& object,
     const core::crypto::secure_string& password
 ) const
 {
     // Create or reuse the object
-    const auto& mesh = IDataDeserializer::safeCast<sight::data::Mesh>(object);
+    const auto& cameraSeries = IDataDeserializer::safeCast<sight::data::CameraSeries>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::Mesh>(tree, 0, 1);
+    IDataDeserializer::readVersion<sight::data::CameraSeries>(tree, 0, 1);
 
-    // Create the istream from the input file inside the archive
-    const auto& uuid    = tree.get<std::string>("uuid");
-    const auto& istream = archive->openFile(
-        std::filesystem::path(uuid + "/mesh.vtp"),
-        password
-    );
+    // Since CameraSeries inherits from Series, we could use SeriesDeserializer
+    const SeriesDeserializer seriesDeserializer;
+    seriesDeserializer.deserialize(archive, tree, children, cameraSeries, password);
 
-    // "Convert" it to a string
-    const std::string content {std::istreambuf_iterator<char>(*istream), std::istreambuf_iterator<char>()};
+    // Deserialize children
+    for(size_t index = 0, end = children.size() ; index < end ; ++index)
+    {
+        const auto& cameraIt = children.find(sight::data::Camera::classname() + std::to_string(index));
 
-    // Create the vtk reader
-    const auto& vtkReader = vtkSmartPointer<vtkXMLPolyDataReader>::New();
-    vtkReader->ReadFromInputStringOn();
-    vtkReader->SetInputString(content);
-    vtkReader->Update();
+        // If we didn't found a matching camera, exit the loop
+        if(cameraIt == children.cend())
+        {
+            break;
+        }
 
-    // Convert from VTK
-    io::vtk::helper::Mesh::fromVTKMesh(vtkReader->GetOutput(), mesh);
+        const auto& camera = IDataDeserializer::safeCast<sight::data::Camera>(cameraIt->second);
+        cameraSeries->addCamera(camera);
+    }
 
-    return mesh;
+    return cameraSeries;
 }
 
 } // detail::data

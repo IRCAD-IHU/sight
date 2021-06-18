@@ -75,15 +75,71 @@ protected:
     IDataDeserializer() = default;
 
     /// Convenience function to safely read strings from a tree
-    /// @param tree boost property tree where string data are stored
-    /// @param key the string data key
-    /// @param password (optional) password used for encryption
-    static std::string readFromTree(
+    /// @param[in] tree boost property tree where string data are stored
+    /// @param[in] key the string data key
+    /// @param[in] password (optional) password used for encryption
+    static std::string readString(
         const boost::property_tree::ptree& tree,
         const std::string& key,
         const core::crypto::secure_string& password = ""
     );
+
+    /// Convenience function to read a version from a tree.
+    /// Optionally checks the version number, when minVersion or maxVersion > 0.
+    /// @param[in] tree boost property tree where version is stored
+    template<typename T>
+    static int readVersion(
+        const boost::property_tree::ptree& tree,
+        const int minVersion = 0,
+        const int maxVersion = 0
+    );
+
+    /// Convenience function to cast and check an object
+    /// Mainly to factorize error management
+    /// @param[in] object the object to cast to type T
+    template<typename T>
+    static typename T::sptr safeCast(const sight::data::Object::sptr& object);
 };
+
+//------------------------------------------------------------------------------
+
+template<typename T>
+int IDataDeserializer::readVersion(
+    const boost::property_tree::ptree& tree,
+    const int minVersion,
+    const int maxVersion
+)
+{
+    // Add a version number. Not mandatory, but could help for future release
+    const int version = tree.get<int>(T::classname() + ".version", -1);
+
+    SIGHT_THROW_IF(
+        T::classname() << " is not implemented for version '" << version << "'.",
+        (minVersion > 0 && minVersion > version) || (maxVersion > 0 && maxVersion < version)
+    );
+
+    return version;
+}
+
+//------------------------------------------------------------------------------
+
+template<typename T>
+typename T::sptr IDataDeserializer::safeCast(const sight::data::Object::sptr& object)
+{
+    if(object)
+    {
+        const auto& casted = T::dynamicCast(object);
+
+        SIGHT_THROW_IF(
+            "Object '" << object->getClassname() << "' is not a '" << T::classname() << "'",
+            casted == nullptr
+        );
+
+        return casted;
+    }
+
+    return T::New();
+}
 
 } // namespace detail::data
 

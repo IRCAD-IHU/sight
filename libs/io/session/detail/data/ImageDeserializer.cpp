@@ -42,25 +42,16 @@ namespace detail::data
 sight::data::Object::sptr ImageDeserializer::deserialize(
     const zip::ArchiveReader::sptr& archive,
     const boost::property_tree::ptree& tree,
-    const std::map<std::string, sight::data::Object::sptr>& children,
+    const std::map<std::string, sight::data::Object::sptr>&,
     const sight::data::Object::sptr& object,
     const core::crypto::secure_string& password
 ) const
 {
     // Create or reuse the object
-    const auto& image = object ? sight::data::Image::dynamicCast(object) : sight::data::Image::New();
-
-    SIGHT_ASSERT(
-        "Object '" << image->getClassname() << "' is not a '" << sight::data::Image::classname() << "'",
-        image
-    );
+    const auto& image = IDataDeserializer::safeCast<sight::data::Image>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    const int version = tree.get<int>("version", 0);
-    SIGHT_THROW_IF(
-        ImageDeserializer::classname() << " is not implemented for version '" << version << "'.",
-        version > 1
-    );
+    IDataDeserializer::readVersion<sight::data::Image>(tree, 0, 1);
 
     // Create the istream from the input file inside the archive
     const auto& uuid    = tree.get<std::string>("uuid");

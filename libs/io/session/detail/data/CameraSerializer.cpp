@@ -31,25 +31,17 @@ namespace detail::data
 
 /// Serialization function
 void CameraSerializer::serialize(
-    const zip::ArchiveWriter::sptr& archive,
+    const zip::ArchiveWriter::sptr&,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
-    std::map<std::string, sight::data::Object::csptr>& children,
-    const core::crypto::secure_string& password
+    std::map<std::string, sight::data::Object::csptr>&,
+    const core::crypto::secure_string&
 ) const
 {
-    const auto& camera = sight::data::Camera::dynamicCast(object);
-    SIGHT_ASSERT(
-        "Object '"
-        << (object ? object->getClassname() : sight::data::Object::classname())
-        << "' is not a '"
-        << sight::data::Camera::classname()
-        << "'",
-        camera
-    );
+    const auto& camera = IDataSerializer::safeCast<sight::data::Camera>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    tree.put("version", 1);
+    IDataSerializer::writeVersion<sight::data::Camera>(tree, 1);
 
     tree.put("Width", camera->getWidth());
     tree.put("Height", camera->getHeight());
@@ -69,12 +61,12 @@ void CameraSerializer::serialize(
     tree.put("Skew", camera->getSkew());
 
     tree.put("IsCalibrated", camera->getIsCalibrated());
-    this->writeToTree(tree, "Description", camera->getDescription());
-    this->writeToTree(tree, "CameraID", camera->getCameraID());
+    this->writeString(tree, "Description", camera->getDescription());
+    this->writeString(tree, "CameraID", camera->getCameraID());
     tree.put("MaximumFrameRate", camera->getMaximumFrameRate());
     tree.put("PixelFormat", camera->getPixelFormat());
-    this->writeToTree(tree, "VideoFile", camera->getVideoFile().string());
-    this->writeToTree(tree, "StreamUrl", camera->getStreamUrl());
+    this->writeString(tree, "VideoFile", camera->getVideoFile().string());
+    this->writeString(tree, "StreamUrl", camera->getStreamUrl());
     tree.put("CameraSource", camera->getCameraSource());
     tree.put("Scale", camera->getScale());
 }

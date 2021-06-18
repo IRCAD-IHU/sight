@@ -35,28 +35,18 @@ namespace detail::data
 //------------------------------------------------------------------------------
 
 sight::data::Object::sptr CalibrationInfoDeserializer::deserialize(
-    const zip::ArchiveReader::sptr& archive,
+    const zip::ArchiveReader::sptr&,
     const boost::property_tree::ptree& tree,
     const std::map<std::string, sight::data::Object::sptr>& children,
     const sight::data::Object::sptr& object,
-    const core::crypto::secure_string& password
+    const core::crypto::secure_string&
 ) const
 {
     // Create or reuse the object
-    const auto& calibrationInfo =
-        object ? sight::data::CalibrationInfo::dynamicCast(object) : sight::data::CalibrationInfo::New();
-
-    SIGHT_ASSERT(
-        "Object '" << calibrationInfo->getClassname() << "' is not a '" << sight::data::CalibrationInfo::classname() << "'",
-        calibrationInfo
-    );
+    const auto& calibrationInfo = IDataDeserializer::safeCast<sight::data::CalibrationInfo>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    const int version = tree.get<int>("version", 0);
-    SIGHT_THROW_IF(
-        CalibrationInfoDeserializer::classname() << " is not implemented for version '" << version << "'.",
-        version > 1
-    );
+    IDataDeserializer::readVersion<sight::data::CalibrationInfo>(tree, 0, 1);
 
     // Deserialize children
     for(std::size_t index = 0, end = children.size() ; index < end ; ++index)
@@ -72,17 +62,8 @@ sight::data::Object::sptr CalibrationInfoDeserializer::deserialize(
             break;
         }
 
-        const auto& image = sight::data::Image::dynamicCast(imageIt->second);
-        SIGHT_ASSERT(
-            "Not a " << sight::data::Image::classname() << ": " << imageIt->second->getClassname(),
-            image
-        );
-
-        const auto& pointList = sight::data::PointList::dynamicCast(pointListIt->second);
-        SIGHT_ASSERT(
-            "Not a " << sight::data::PointList::classname() << ": " << pointListIt->second->getClassname(),
-            pointList
-        );
+        const auto& image     = IDataDeserializer::safeCast<sight::data::Image>(imageIt->second);
+        const auto& pointList = IDataDeserializer::safeCast<sight::data::PointList>(pointListIt->second);
 
         calibrationInfo->addRecord(image, pointList);
     }

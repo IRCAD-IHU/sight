@@ -22,6 +22,7 @@
 #include "EquipmentDeserializer.hpp"
 
 #include <core/crypto/Base64.hpp>
+#include <core/exceptionmacros.hpp>
 
 #include <data/Equipment.hpp>
 
@@ -34,23 +35,20 @@ namespace detail::data
 //------------------------------------------------------------------------------
 
 sight::data::Object::sptr EquipmentDeserializer::deserialize(
-    const zip::ArchiveReader::sptr& archive,
+    const zip::ArchiveReader::sptr&,
     const boost::property_tree::ptree& tree,
-    const std::map<std::string, sight::data::Object::sptr>& children,
+    const std::map<std::string, sight::data::Object::sptr>&,
     const sight::data::Object::sptr& object,
-    const core::crypto::secure_string& password
+    const core::crypto::secure_string&
 ) const
 {
     // Create or reuse the object
-    const auto& equipment =
-        object ? sight::data::Equipment::dynamicCast(object) : sight::data::Equipment::New();
+    const auto& equipment = IDataDeserializer::safeCast<sight::data::Equipment>(object);
 
-    SIGHT_ASSERT(
-        "Object '" << equipment->getClassname() << "' is not a '" << sight::data::Equipment::classname() << "'",
-        equipment
-    );
+    // Check version number. Not mandatory, but could help for future release
+    IDataDeserializer::readVersion<sight::data::Equipment>(tree, 0, 1);
 
-    equipment->setInstitutionName(readFromTree(tree, "InstitutionName"));
+    equipment->setInstitutionName(readString(tree, "InstitutionName"));
 
     return equipment;
 }

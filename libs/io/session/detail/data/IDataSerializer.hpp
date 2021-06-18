@@ -75,17 +75,56 @@ protected:
     IDataSerializer() = default;
 
     /// Convenience function to safely put strings into a tree
-    /// @param tree boost property tree where string data must be stored
-    /// @param key the string data key
-    /// @param value the string data
-    /// @param password (optional) password used for encryption
-    static void writeToTree(
+    /// @param[inout] tree boost property tree where string data must be stored
+    /// @param[in] key the string data key
+    /// @param[in] value the string data
+    /// @param[in] password (optional) password used for encryption
+    static void writeString(
         boost::property_tree::ptree& tree,
         const std::string& key,
         const std::string& value,
         const core::crypto::secure_string& password = ""
     );
+
+    /// Convenience function to write a version number in the property tree
+    /// @param[inout] tree boost property tree where the version must be stored
+    /// @param[in] version the version number to store
+    template<typename T>
+    static void writeVersion(boost::property_tree::ptree& tree, int version);
+
+    /// Convenience function to cast and check an object
+    /// Mainly to factorize error management
+    /// @param[in] object the object to cast to type T
+    template<typename T>
+    static typename T::csptr safeCast(const sight::data::Object::csptr& object);
 };
+
+//------------------------------------------------------------------------------
+
+template<typename T>
+void IDataSerializer::writeVersion(boost::property_tree::ptree& tree, int version)
+{
+    // Add a version number. Not mandatory, but could help for future release
+    tree.put(T::classname() + ".version", std::to_string(version));
+}
+
+//------------------------------------------------------------------------------
+
+template<typename T>
+typename T::csptr IDataSerializer::safeCast(const sight::data::Object::csptr& object)
+{
+    const auto& casted = T::dynamicCast(object);
+    SIGHT_THROW_IF(
+        "Object '"
+        << (object ? object->getClassname() : sight::data::Object::classname())
+        << "' is not a '"
+        << T::classname()
+        << "'",
+        casted == nullptr
+    );
+
+    return casted;
+}
 
 } // namespace detail::data
 

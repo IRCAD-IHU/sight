@@ -34,32 +34,27 @@ namespace detail::data
 
 /// Serialization function
 void PatientSerializer::serialize(
-    const zip::ArchiveWriter::sptr& archive,
+    const zip::ArchiveWriter::sptr&,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
-    std::map<std::string, sight::data::Object::csptr>& children,
+    std::map<std::string, sight::data::Object::csptr>&,
     const core::crypto::secure_string& password
 ) const
 {
-    const auto& patient = sight::data::Patient::dynamicCast(object);
-    SIGHT_ASSERT(
-        "Object '"
-        << (object ? object->getClassname() : sight::data::Object::classname())
-        << "' is not a '"
-        << sight::data::Patient::classname()
-        << "'",
-        patient
-    );
+    const auto& patient = IDataSerializer::safeCast<sight::data::Patient>(object);
+
+    // Add a version number. Not mandatory, but could help for future release
+    IDataSerializer::writeVersion<sight::data::Patient>(tree, 1);
 
     // Serialize patient data
     // Even if the session is not password protected,
     // it is still possible to somewhat protect "sensitive" fields from direct reading
     const auto& fieldPassword = password + patient->getUUID().c_str();
 
-    writeToTree(tree, "Name", patient->getName(), fieldPassword);
-    writeToTree(tree, "PatientId", patient->getPatientId(), fieldPassword);
-    writeToTree(tree, "Birthdate", patient->getBirthdate(), fieldPassword);
-    writeToTree(tree, "Sex", patient->getSex(), fieldPassword);
+    writeString(tree, "Name", patient->getName(), fieldPassword);
+    writeString(tree, "PatientId", patient->getPatientId(), fieldPassword);
+    writeString(tree, "Birthdate", patient->getBirthdate(), fieldPassword);
+    writeString(tree, "Sex", patient->getSex(), fieldPassword);
 }
 
 } // detail::data

@@ -19,9 +19,13 @@
  *
  ***********************************************************************/
 
-#include "CalibrationInfoSerializer.hpp"
+#include "CameraSeriesSerializer.hpp"
 
-#include <data/CalibrationInfo.hpp>
+#include "SeriesSerializer.hpp"
+
+#include <core/crypto/Base64.hpp>
+
+#include <data/CameraSeries.hpp>
 
 namespace sight::io::session
 {
@@ -30,31 +34,27 @@ namespace detail::data
 {
 
 /// Serialization function
-void CalibrationInfoSerializer::serialize(
-    const zip::ArchiveWriter::sptr&,
+void CameraSeriesSerializer::serialize(
+    const zip::ArchiveWriter::sptr& archive,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
     std::map<std::string, sight::data::Object::csptr>& children,
-    const core::crypto::secure_string&
+    const core::crypto::secure_string& password
 ) const
 {
-    const auto& calibrationInfo = IDataSerializer::safeCast<sight::data::CalibrationInfo>(object);
+    const auto& cameraSeries = IDataSerializer::safeCast<sight::data::CameraSeries>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::CalibrationInfo>(tree, 1);
+    IDataSerializer::writeVersion<sight::data::CameraSeries>(tree, 1);
 
-    // Images
-    int index = 0;
-    for(const auto& image : calibrationInfo->getImageContainer())
-    {
-        children[image->getClassname() + std::to_string(index++)] = image;
-    }
+    // Since CameraSeries inherits from Series, we could use SeriesSerializer
+    const SeriesSerializer seriesSerializer;
+    seriesSerializer.serialize(archive, tree, cameraSeries, children, password);
 
-    // PointLists
-    index = 0;
-    for(const auto& pointList : calibrationInfo->getPointListContainer())
+    // Serialize the children camera
+    for(size_t index = 0, end = cameraSeries->getNumberOfCameras() ; index < end ; ++index)
     {
-        children[pointList->getClassname() + std::to_string(index++)] = pointList;
+        children[sight::data::Camera::classname() + std::to_string(index)] = cameraSeries->getCamera(index);
     }
 }
 

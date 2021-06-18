@@ -43,15 +43,10 @@ void ActivitySeriesSerializer::serialize(
     const core::crypto::secure_string& password
 ) const
 {
-    const auto& activitySeries = sight::data::ActivitySeries::dynamicCast(object);
-    SIGHT_ASSERT(
-        "Object '"
-        << (object ? object->getClassname() : sight::data::Object::classname())
-        << "' is not a '"
-        << sight::data::ActivitySeries::classname()
-        << "'",
-        activitySeries
-    );
+    const auto& activitySeries = IDataSerializer::safeCast<sight::data::ActivitySeries>(object);
+
+    // Add a version number. Not mandatory, but could help for future release
+    IDataSerializer::writeVersion<sight::data::ActivitySeries>(tree, 1);
 
     // Since ActivitySeries inherits from Series, we could use SeriesSerializer
     const SeriesSerializer seriesSerializer;
@@ -62,7 +57,7 @@ void ActivitySeriesSerializer::serialize(
     children["Data"] = activitySeries->getData();
 
     // Serialize trivial properties
-    writeToTree(tree, "ActivityConfigId", activitySeries->getActivityConfigId());
+    writeString(tree, "ActivityConfigId", activitySeries->getActivityConfigId());
 }
 
 } // detail::data

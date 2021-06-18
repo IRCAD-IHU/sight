@@ -35,28 +35,18 @@ namespace detail::data
 //------------------------------------------------------------------------------
 
 sight::data::Object::sptr CameraDeserializer::deserialize(
-    const zip::ArchiveReader::sptr& archive,
+    const zip::ArchiveReader::sptr&,
     const boost::property_tree::ptree& tree,
-    const std::map<std::string, sight::data::Object::sptr>& children,
+    const std::map<std::string, sight::data::Object::sptr>&,
     const sight::data::Object::sptr& object,
-    const core::crypto::secure_string& password
+    const core::crypto::secure_string&
 ) const
 {
     // Create or reuse the object
-    const auto& camera =
-        object ? sight::data::Camera::dynamicCast(object) : sight::data::Camera::New();
-
-    SIGHT_ASSERT(
-        "Object '" << camera->getClassname() << "' is not a '" << sight::data::Camera::classname() << "'",
-        camera
-    );
+    const auto& camera = IDataDeserializer::safeCast<sight::data::Camera>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    const int version = tree.get<int>("version", 0);
-    SIGHT_THROW_IF(
-        CameraDeserializer::classname() << " is not implemented for version '" << version << "'.",
-        version > 1
-    );
+    IDataDeserializer::readVersion<sight::data::Camera>(tree, 0, 1);
 
     camera->setWidth(tree.get<size_t>("Width"));
     camera->setHeight(tree.get<size_t>("Height"));
@@ -77,12 +67,12 @@ sight::data::Object::sptr CameraDeserializer::deserialize(
     camera->setSkew(tree.get<double>("Skew"));
 
     camera->setIsCalibrated(tree.get<bool>("IsCalibrated"));
-    camera->setDescription(this->readFromTree(tree, "Description"));
-    camera->setCameraID(this->readFromTree(tree, "CameraID"));
+    camera->setDescription(this->readString(tree, "Description"));
+    camera->setCameraID(this->readString(tree, "CameraID"));
     camera->setMaximumFrameRate(tree.get<float>("MaximumFrameRate"));
     camera->setPixelFormat(static_cast<sight::data::Camera::PixelFormat>(tree.get<int>("PixelFormat")));
-    camera->setVideoFile(this->readFromTree(tree, "VideoFile"));
-    camera->setStreamUrl(this->readFromTree(tree, "StreamUrl"));
+    camera->setVideoFile(this->readString(tree, "VideoFile"));
+    camera->setStreamUrl(this->readString(tree, "StreamUrl"));
     camera->setCameraSource(static_cast<sight::data::Camera::SourceType>(tree.get<int>("CameraSource")));
     camera->setScale(tree.get<double>("Scale"));
 

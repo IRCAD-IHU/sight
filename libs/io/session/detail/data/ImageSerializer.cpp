@@ -40,22 +40,14 @@ void ImageSerializer::serialize(
     const zip::ArchiveWriter::sptr& archive,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
-    std::map<std::string, sight::data::Object::csptr>& children,
+    std::map<std::string, sight::data::Object::csptr>&,
     const core::crypto::secure_string& password
 ) const
 {
-    const auto& image = sight::data::Image::dynamicCast(object);
-    SIGHT_ASSERT(
-        "Object '"
-        << (object ? object->getClassname() : sight::data::Object::classname())
-        << "' is not a '"
-        << sight::data::Image::classname()
-        << "'",
-        image
-    );
+    const auto& image = IDataSerializer::safeCast<sight::data::Image>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    tree.put("version", 1);
+    IDataSerializer::writeVersion<sight::data::Image>(tree, 1);
 
     // Convert the image to VTK
     const auto& vtkImage = vtkSmartPointer<vtkImageData>::New();

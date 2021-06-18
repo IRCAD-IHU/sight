@@ -31,25 +31,17 @@ namespace detail::data
 
 /// Serialization function
 void PointSerializer::serialize(
-    const zip::ArchiveWriter::sptr& archive,
+    const zip::ArchiveWriter::sptr&,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
-    std::map<std::string, sight::data::Object::csptr>& children,
-    const core::crypto::secure_string& password
+    std::map<std::string, sight::data::Object::csptr>&,
+    const core::crypto::secure_string&
 ) const
 {
-    const auto& point = sight::data::Point::dynamicCast(object);
-    SIGHT_ASSERT(
-        "Object '"
-        << (object ? object->getClassname() : sight::data::Object::classname())
-        << "' is not a '"
-        << sight::data::Point::classname()
-        << "'",
-        point
-    );
+    const auto& point = IDataSerializer::safeCast<sight::data::Point>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    tree.put("version", 1);
+    IDataSerializer::writeVersion<sight::data::Point>(tree, 1);
 
     const auto& coordinate = point->getCoord();
     tree.put("x", coordinate[0]);

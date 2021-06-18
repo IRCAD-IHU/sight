@@ -54,6 +54,7 @@ public:
     CPPUNIT_TEST(pointListTest);
     CPPUNIT_TEST(calibrationInfoTest);
     CPPUNIT_TEST(cameraTest);
+    CPPUNIT_TEST(cameraSeriesTest);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -82,6 +83,7 @@ public:
     void pointListTest();
     void calibrationInfoTest();
     void cameraTest();
+    void cameraSeriesTest();
 };
 
 } // namespace ut

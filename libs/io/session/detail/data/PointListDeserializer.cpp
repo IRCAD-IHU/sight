@@ -35,28 +35,18 @@ namespace detail::data
 //------------------------------------------------------------------------------
 
 sight::data::Object::sptr PointListDeserializer::deserialize(
-    const zip::ArchiveReader::sptr& archive,
+    const zip::ArchiveReader::sptr&,
     const boost::property_tree::ptree& tree,
     const std::map<std::string, sight::data::Object::sptr>& children,
     const sight::data::Object::sptr& object,
-    const core::crypto::secure_string& password
+    const core::crypto::secure_string&
 ) const
 {
     // Create or reuse the object
-    const auto& pointList =
-        object ? sight::data::PointList::dynamicCast(object) : sight::data::PointList::New();
-
-    SIGHT_ASSERT(
-        "Object '" << pointList->getClassname() << "' is not a '" << sight::data::PointList::classname() << "'",
-        pointList
-    );
+    const auto& pointList = IDataDeserializer::safeCast<sight::data::PointList>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    const int version = tree.get<int>("version", 0);
-    SIGHT_THROW_IF(
-        PointListDeserializer::classname() << " is not implemented for version '" << version << "'.",
-        version > 1
-    );
+    IDataDeserializer::readVersion<sight::data::PointList>(tree, 0, 1);
 
     // Convert the map into a vector
     // We assume the key is the index

@@ -22,6 +22,7 @@
 #include "StudyDeserializer.hpp"
 
 #include <core/crypto/Base64.hpp>
+#include <core/exceptionmacros.hpp>
 
 #include <data/Study.hpp>
 
@@ -34,33 +35,30 @@ namespace detail::data
 //------------------------------------------------------------------------------
 
 sight::data::Object::sptr StudyDeserializer::deserialize(
-    const zip::ArchiveReader::sptr& archive,
+    const zip::ArchiveReader::sptr&,
     const boost::property_tree::ptree& tree,
-    const std::map<std::string, sight::data::Object::sptr>& children,
+    const std::map<std::string, sight::data::Object::sptr>&,
     const sight::data::Object::sptr& object,
-    const core::crypto::secure_string& password
+    const core::crypto::secure_string&
 ) const
 {
     // Create or reuse the object
-    const auto& study =
-        object ? sight::data::Study::dynamicCast(object) : sight::data::Study::New();
+    const auto& study = IDataDeserializer::safeCast<sight::data::Study>(object);
 
-    SIGHT_ASSERT(
-        "Object '" << study->getClassname() << "' is not a '" << sight::data::Study::classname() << "'",
-        study
-    );
+    // Check version number. Not mandatory, but could help for future release
+    IDataDeserializer::readVersion<sight::data::Study>(tree, 0, 1);
 
-    study->setInstanceUID(readFromTree(tree, "InstanceUID"));
-    study->setStudyID(readFromTree(tree, "StudyID"));
-    study->setDate(readFromTree(tree, "Date"));
-    study->setTime(readFromTree(tree, "Time"));
-    study->setReferringPhysicianName(readFromTree(tree, "ReferringPhysicianName"));
-    study->setConsultingPhysicianName(readFromTree(tree, "ConsultingPhysicianName"));
-    study->setDescription(readFromTree(tree, "Description"));
-    study->setPatientAge(readFromTree(tree, "PatientAge"));
-    study->setPatientSize(readFromTree(tree, "PatientSize"));
-    study->setPatientWeight(readFromTree(tree, "PatientWeight"));
-    study->setPatientBodyMassIndex(readFromTree(tree, "PatientBodyMassIndex"));
+    study->setInstanceUID(readString(tree, "InstanceUID"));
+    study->setStudyID(readString(tree, "StudyID"));
+    study->setDate(readString(tree, "Date"));
+    study->setTime(readString(tree, "Time"));
+    study->setReferringPhysicianName(readString(tree, "ReferringPhysicianName"));
+    study->setConsultingPhysicianName(readString(tree, "ConsultingPhysicianName"));
+    study->setDescription(readString(tree, "Description"));
+    study->setPatientAge(readString(tree, "PatientAge"));
+    study->setPatientSize(readString(tree, "PatientSize"));
+    study->setPatientWeight(readString(tree, "PatientWeight"));
+    study->setPatientBodyMassIndex(readString(tree, "PatientBodyMassIndex"));
 
     return study;
 }

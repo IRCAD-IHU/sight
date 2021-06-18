@@ -22,6 +22,7 @@
 #include "SeriesDeserializer.hpp"
 
 #include <core/crypto/Base64.hpp>
+#include <core/exceptionmacros.hpp>
 
 #include <data/Equipment.hpp>
 #include <data/Patient.hpp>
@@ -37,21 +38,18 @@ namespace detail::data
 //------------------------------------------------------------------------------
 
 sight::data::Object::sptr SeriesDeserializer::deserialize(
-    const zip::ArchiveReader::sptr& archive,
+    const zip::ArchiveReader::sptr&,
     const boost::property_tree::ptree& tree,
     const std::map<std::string, sight::data::Object::sptr>& children,
     const sight::data::Object::sptr& object,
-    const core::crypto::secure_string& password
+    const core::crypto::secure_string&
 ) const
 {
     // Create or reuse the object
-    const auto& series =
-        object ? sight::data::Series::dynamicCast(object) : sight::data::Series::New();
+    const auto& series = IDataDeserializer::safeCast<sight::data::Series>(object);
 
-    SIGHT_ASSERT(
-        "Object '" << series->getClassname() << "' is not a '" << sight::data::Series::classname() << "'",
-        series
-    );
+    // Check version number. Not mandatory, but could help for future release
+    IDataDeserializer::readVersion<sight::data::Series>(tree, 0, 1);
 
     // Set children from map
     series->setPatient(sight::data::Patient::dynamicCast(children.at("Patient")));
@@ -59,24 +57,24 @@ sight::data::Object::sptr SeriesDeserializer::deserialize(
     series->setEquipment(sight::data::Equipment::dynamicCast(children.at("Equipment")));
 
     // Deserialize patient data
-    series->setModality(readFromTree(tree, "Modality"));
-    series->setInstanceUID(readFromTree(tree, "InstanceUID"));
-    series->setNumber(readFromTree(tree, "Number"));
-    series->setLaterality(readFromTree(tree, "Laterality"));
-    series->setDate(readFromTree(tree, "Date"));
-    series->setTime(readFromTree(tree, "Time"));
-    series->setProtocolName(readFromTree(tree, "ProtocolName"));
-    series->setDescription(readFromTree(tree, "Description"));
-    series->setBodyPartExamined(readFromTree(tree, "BodyPartExamined"));
-    series->setPatientPosition(readFromTree(tree, "PatientPosition"));
-    series->setAnatomicalOrientationType(readFromTree(tree, "AnatomicalOrientationType"));
-    series->setPerformedProcedureStepID(readFromTree(tree, "PerformedProcedureStepID"));
-    series->setPerformedProcedureStepStartDate(readFromTree(tree, "PerformedProcedureStepStartDate"));
-    series->setPerformedProcedureStepStartTime(readFromTree(tree, "PerformedProcedureStepStartTime"));
-    series->setPerformedProcedureStepEndDate(readFromTree(tree, "PerformedProcedureStepEndDate"));
-    series->setPerformedProcedureStepEndTime(readFromTree(tree, "PerformedProcedureStepEndTime"));
-    series->setPerformedProcedureStepDescription(readFromTree(tree, "PerformedProcedureStepDescription"));
-    series->setPerformedProcedureComments(readFromTree(tree, "PerformedProcedureComments"));
+    series->setModality(readString(tree, "Modality"));
+    series->setInstanceUID(readString(tree, "InstanceUID"));
+    series->setNumber(readString(tree, "Number"));
+    series->setLaterality(readString(tree, "Laterality"));
+    series->setDate(readString(tree, "Date"));
+    series->setTime(readString(tree, "Time"));
+    series->setProtocolName(readString(tree, "ProtocolName"));
+    series->setDescription(readString(tree, "Description"));
+    series->setBodyPartExamined(readString(tree, "BodyPartExamined"));
+    series->setPatientPosition(readString(tree, "PatientPosition"));
+    series->setAnatomicalOrientationType(readString(tree, "AnatomicalOrientationType"));
+    series->setPerformedProcedureStepID(readString(tree, "PerformedProcedureStepID"));
+    series->setPerformedProcedureStepStartDate(readString(tree, "PerformedProcedureStepStartDate"));
+    series->setPerformedProcedureStepStartTime(readString(tree, "PerformedProcedureStepStartTime"));
+    series->setPerformedProcedureStepEndDate(readString(tree, "PerformedProcedureStepEndDate"));
+    series->setPerformedProcedureStepEndTime(readString(tree, "PerformedProcedureStepEndTime"));
+    series->setPerformedProcedureStepDescription(readString(tree, "PerformedProcedureStepDescription"));
+    series->setPerformedProcedureComments(readString(tree, "PerformedProcedureComments"));
 
     // Iterate on performingPhysiciansName
     std::vector<std::string> names;

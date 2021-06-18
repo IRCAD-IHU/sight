@@ -31,24 +31,19 @@ namespace detail::data
 
 /// Serialization function
 void StringSerializer::serialize(
-    const zip::ArchiveWriter::sptr& archive,
+    const zip::ArchiveWriter::sptr&,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
-    std::map<std::string, sight::data::Object::csptr>& children,
-    const core::crypto::secure_string& password
+    std::map<std::string, sight::data::Object::csptr>&,
+    const core::crypto::secure_string&
 ) const
 {
-    const auto& string = sight::data::String::dynamicCast(object);
-    SIGHT_ASSERT(
-        "Object '"
-        << (object ? object->getClassname() : sight::data::Object::classname())
-        << "' is not a '"
-        << sight::data::String::classname()
-        << "'",
-        string
-    );
+    const auto& string = IDataSerializer::safeCast<sight::data::String>(object);
 
-    writeToTree(tree, "Value", string->getValue());
+    // Add a version number. Not mandatory, but could help for future release
+    IDataSerializer::writeVersion<sight::data::String>(tree, 1);
+
+    writeString(tree, "Value", string->getValue());
 }
 
 } // detail::data

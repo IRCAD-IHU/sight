@@ -33,34 +33,29 @@ namespace detail::data
 
 /// Serialization function
 void StudySerializer::serialize(
-    const zip::ArchiveWriter::sptr& archive,
+    const zip::ArchiveWriter::sptr&,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
-    std::map<std::string, sight::data::Object::csptr>& children,
-    const core::crypto::secure_string& password
+    std::map<std::string, sight::data::Object::csptr>&,
+    const core::crypto::secure_string&
 ) const
 {
-    const auto& study = sight::data::Study::dynamicCast(object);
-    SIGHT_ASSERT(
-        "Object '"
-        << (object ? object->getClassname() : sight::data::Object::classname())
-        << "' is not a '"
-        << sight::data::Study::classname()
-        << "'",
-        study
-    );
+    const auto& study = IDataSerializer::safeCast<sight::data::Study>(object);
 
-    writeToTree(tree, "InstanceUID", study->getInstanceUID());
-    writeToTree(tree, "StudyID", study->getStudyID());
-    writeToTree(tree, "Date", study->getDate());
-    writeToTree(tree, "Time", study->getTime());
-    writeToTree(tree, "ReferringPhysicianName", study->getReferringPhysicianName());
-    writeToTree(tree, "ConsultingPhysicianName", study->getConsultingPhysicianName());
-    writeToTree(tree, "Description", study->getDescription());
-    writeToTree(tree, "PatientAge", study->getPatientAge());
-    writeToTree(tree, "PatientSize", study->getPatientSize());
-    writeToTree(tree, "PatientWeight", study->getPatientWeight());
-    writeToTree(tree, "PatientBodyMassIndex", study->getPatientBodyMassIndex());
+    // Add a version number. Not mandatory, but could help for future release
+    IDataSerializer::writeVersion<sight::data::Study>(tree, 1);
+
+    writeString(tree, "InstanceUID", study->getInstanceUID());
+    writeString(tree, "StudyID", study->getStudyID());
+    writeString(tree, "Date", study->getDate());
+    writeString(tree, "Time", study->getTime());
+    writeString(tree, "ReferringPhysicianName", study->getReferringPhysicianName());
+    writeString(tree, "ConsultingPhysicianName", study->getConsultingPhysicianName());
+    writeString(tree, "Description", study->getDescription());
+    writeString(tree, "PatientAge", study->getPatientAge());
+    writeString(tree, "PatientSize", study->getPatientSize());
+    writeString(tree, "PatientWeight", study->getPatientWeight());
+    writeString(tree, "PatientBodyMassIndex", study->getPatientBodyMassIndex());
 }
 
 } // detail::data

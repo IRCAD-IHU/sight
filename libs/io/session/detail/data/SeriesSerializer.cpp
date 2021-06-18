@@ -36,22 +36,17 @@ namespace detail::data
 
 /// Serialization function
 void SeriesSerializer::serialize(
-    const zip::ArchiveWriter::sptr& archive,
+    const zip::ArchiveWriter::sptr&,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
     std::map<std::string, sight::data::Object::csptr>& children,
-    const core::crypto::secure_string& password
+    const core::crypto::secure_string&
 ) const
 {
-    const auto& series = sight::data::Series::dynamicCast(object);
-    SIGHT_ASSERT(
-        "Object '"
-        << (object ? object->getClassname() : sight::data::Object::classname())
-        << "' is not a '"
-        << sight::data::Series::classname()
-        << "'",
-        series
-    );
+    const auto& series = IDataSerializer::safeCast<sight::data::Series>(object);
+
+    // Add a version number. Not mandatory, but could help for future release
+    IDataSerializer::writeVersion<sight::data::Series>(tree, 1);
 
     // Fill children map
     children["Patient"]   = series->getPatient();
@@ -59,24 +54,24 @@ void SeriesSerializer::serialize(
     children["Equipment"] = series->getEquipment();
 
     // Serialize patient data
-    writeToTree(tree, "Modality", series->getModality());
-    writeToTree(tree, "InstanceUID", series->getInstanceUID());
-    writeToTree(tree, "Number", series->getNumber());
-    writeToTree(tree, "Laterality", series->getLaterality());
-    writeToTree(tree, "Date", series->getDate());
-    writeToTree(tree, "Time", series->getTime());
-    writeToTree(tree, "ProtocolName", series->getProtocolName());
-    writeToTree(tree, "Description", series->getDescription());
-    writeToTree(tree, "BodyPartExamined", series->getBodyPartExamined());
-    writeToTree(tree, "PatientPosition", series->getPatientPosition());
-    writeToTree(tree, "AnatomicalOrientationType", series->getAnatomicalOrientationType());
-    writeToTree(tree, "PerformedProcedureStepID", series->getPerformedProcedureStepID());
-    writeToTree(tree, "PerformedProcedureStepStartDate", series->getPerformedProcedureStepStartDate());
-    writeToTree(tree, "PerformedProcedureStepStartTime", series->getPerformedProcedureStepStartTime());
-    writeToTree(tree, "PerformedProcedureStepEndDate", series->getPerformedProcedureStepEndDate());
-    writeToTree(tree, "PerformedProcedureStepEndTime", series->getPerformedProcedureStepEndTime());
-    writeToTree(tree, "PerformedProcedureStepDescription", series->getPerformedProcedureStepDescription());
-    writeToTree(tree, "PerformedProcedureComments", series->getPerformedProcedureComments());
+    writeString(tree, "Modality", series->getModality());
+    writeString(tree, "InstanceUID", series->getInstanceUID());
+    writeString(tree, "Number", series->getNumber());
+    writeString(tree, "Laterality", series->getLaterality());
+    writeString(tree, "Date", series->getDate());
+    writeString(tree, "Time", series->getTime());
+    writeString(tree, "ProtocolName", series->getProtocolName());
+    writeString(tree, "Description", series->getDescription());
+    writeString(tree, "BodyPartExamined", series->getBodyPartExamined());
+    writeString(tree, "PatientPosition", series->getPatientPosition());
+    writeString(tree, "AnatomicalOrientationType", series->getAnatomicalOrientationType());
+    writeString(tree, "PerformedProcedureStepID", series->getPerformedProcedureStepID());
+    writeString(tree, "PerformedProcedureStepStartDate", series->getPerformedProcedureStepStartDate());
+    writeString(tree, "PerformedProcedureStepStartTime", series->getPerformedProcedureStepStartTime());
+    writeString(tree, "PerformedProcedureStepEndDate", series->getPerformedProcedureStepEndDate());
+    writeString(tree, "PerformedProcedureStepEndTime", series->getPerformedProcedureStepEndTime());
+    writeString(tree, "PerformedProcedureStepDescription", series->getPerformedProcedureStepDescription());
+    writeString(tree, "PerformedProcedureComments", series->getPerformedProcedureComments());
 
     boost::property_tree::ptree namesTree;
 

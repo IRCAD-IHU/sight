@@ -31,28 +31,27 @@ namespace sight::io::session
 namespace detail::data
 {
 
-/// Class used to deserialize a generic object from a session
-template<typename T>
-class GenericDeserializer : public IDataDeserializer
+/// Class used to serialize composite object to a session
+class CameraSeriesDeserializer : public IDataDeserializer
 {
 public:
 
-    SIGHT_DECLARE_CLASS(GenericDeserializer<T>, IDataDeserializer);
+    SIGHT_DECLARE_CLASS(CameraSeriesDeserializer, IDataDeserializer);
 
     /// Delete default copy constructors and assignment operators
-    GenericDeserializer(const GenericDeserializer&)            = delete;
-    GenericDeserializer(GenericDeserializer&&)                 = delete;
-    GenericDeserializer& operator=(const GenericDeserializer&) = delete;
-    GenericDeserializer& operator=(GenericDeserializer&&)      = delete;
+    CameraSeriesDeserializer(const CameraSeriesDeserializer&)            = delete;
+    CameraSeriesDeserializer(CameraSeriesDeserializer&&)                 = delete;
+    CameraSeriesDeserializer& operator=(const CameraSeriesDeserializer&) = delete;
+    CameraSeriesDeserializer& operator=(CameraSeriesDeserializer&&)      = delete;
 
     /// Default constructor
-    GenericDeserializer() = default;
+    CameraSeriesDeserializer() = default;
 
     /// Default destructor
-    ~GenericDeserializer() override = default;
+    ~CameraSeriesDeserializer() override = default;
 
-    /// Deserialization function
-    inline sight::data::Object::sptr deserialize(
+    // Serialization function
+    sight::data::Object::sptr deserialize(
         const zip::ArchiveReader::sptr& archive,
         const boost::property_tree::ptree& tree,
         const std::map<std::string, sight::data::Object::sptr>& children,
@@ -60,29 +59,6 @@ public:
         const core::crypto::secure_string& password = ""
     ) const override;
 };
-
-//------------------------------------------------------------------------------
-
-template<typename T>
-sight::data::Object::sptr GenericDeserializer<T>::deserialize(
-    const zip::ArchiveReader::sptr&,
-    const boost::property_tree::ptree& tree,
-    const std::map<std::string, sight::data::Object::sptr>&,
-    const sight::data::Object::sptr& object,
-    const core::crypto::secure_string&
-) const
-{
-    // Create or reuse the object
-    const auto& newObject = IDataDeserializer::safeCast<T>(object);
-
-    // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<T>(tree, 0, 1);
-
-    // Assign the value
-    newObject->setValue(tree.get<typename T::ValueType>("Value"));
-
-    return newObject;
-}
 
 } // namespace detail::data
 

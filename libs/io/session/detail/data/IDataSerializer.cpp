@@ -32,7 +32,7 @@ namespace detail::data
 
 //------------------------------------------------------------------------------
 
-void IDataSerializer::writeToTree(
+void IDataSerializer::writeString(
     boost::property_tree::ptree& tree,
     const std::string& key,
     const std::string& value,

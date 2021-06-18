@@ -21,6 +21,8 @@
 
 #include "CompositeDeserializer.hpp"
 
+#include <core/exceptionmacros.hpp>
+
 #include <data/Composite.hpp>
 
 namespace sight::io::session
@@ -32,21 +34,18 @@ namespace detail::data
 //------------------------------------------------------------------------------
 
 sight::data::Object::sptr CompositeDeserializer::deserialize(
-    const zip::ArchiveReader::sptr& archive,
+    const zip::ArchiveReader::sptr&,
     const boost::property_tree::ptree& tree,
     const std::map<std::string, sight::data::Object::sptr>& children,
     const sight::data::Object::sptr& object,
-    const core::crypto::secure_string& password
+    const core::crypto::secure_string&
 ) const
 {
     // Create or reuse the object
-    const auto& composite =
-        object ? sight::data::Composite::dynamicCast(object) : sight::data::Composite::New();
+    const auto& composite = IDataDeserializer::safeCast<sight::data::Composite>(object);
 
-    SIGHT_ASSERT(
-        "Object '" << composite->getClassname() << "' is not a '" << sight::data::Composite::classname() << "'",
-        composite
-    );
+    // Check version number. Not mandatory, but could help for future release
+    IDataDeserializer::readVersion<sight::data::Composite>(tree, 0, 1);
 
     composite->setContainer(children);
 

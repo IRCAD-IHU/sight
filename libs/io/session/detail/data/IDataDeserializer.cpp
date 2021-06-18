@@ -32,7 +32,7 @@ namespace detail::data
 
 //------------------------------------------------------------------------------
 
-std::string IDataDeserializer::readFromTree(
+std::string IDataDeserializer::readString(
     const boost::property_tree::ptree& tree,
     const std::string& key,
     const core::crypto::secure_string& password

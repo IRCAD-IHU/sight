@@ -24,6 +24,7 @@
 #include "SeriesDeserializer.hpp"
 
 #include <core/crypto/Base64.hpp>
+#include <core/exceptionmacros.hpp>
 
 #include <data/ActivitySeries.hpp>
 #include <data/Composite.hpp>
@@ -45,13 +46,10 @@ sight::data::Object::sptr ActivitySeriesDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& activitySeries =
-        object ? sight::data::ActivitySeries::dynamicCast(object) : sight::data::ActivitySeries::New();
+    const auto& activitySeries = IDataDeserializer::safeCast<sight::data::ActivitySeries>(object);
 
-    SIGHT_ASSERT(
-        "Object '" << activitySeries->getClassname() << "' is not a '" << sight::data::ActivitySeries::classname() << "'",
-        activitySeries
-    );
+    // Check version number. Not mandatory, but could help for future release
+    IDataDeserializer::readVersion<sight::data::ActivitySeries>(tree, 0, 1);
 
     // Since ActivitySeries inherits from Series, we could use SeriesDeserializer
     const SeriesDeserializer seriesDeserializer;
@@ -62,7 +60,7 @@ sight::data::Object::sptr ActivitySeriesDeserializer::deserialize(
     activitySeries->setData(sight::data::Composite::dynamicCast(children.at("Data")));
 
     // Serialize trivial properties
-    activitySeries->setActivityConfigId(readFromTree(tree, "ActivityConfigId"));
+    activitySeries->setActivityConfigId(readString(tree, "ActivityConfigId"));
 
     return activitySeries;
 }

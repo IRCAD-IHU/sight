@@ -34,28 +34,18 @@ namespace detail::data
 //------------------------------------------------------------------------------
 
 sight::data::Object::sptr PointDeserializer::deserialize(
-    const zip::ArchiveReader::sptr& archive,
+    const zip::ArchiveReader::sptr&,
     const boost::property_tree::ptree& tree,
-    const std::map<std::string, sight::data::Object::sptr>& children,
+    const std::map<std::string, sight::data::Object::sptr>&,
     const sight::data::Object::sptr& object,
-    const core::crypto::secure_string& password
+    const core::crypto::secure_string&
 ) const
 {
     // Create or reuse the object
-    const auto& point =
-        object ? sight::data::Point::dynamicCast(object) : sight::data::Point::New();
-
-    SIGHT_ASSERT(
-        "Object '" << point->getClassname() << "' is not a '" << sight::data::Point::classname() << "'",
-        point
-    );
+    const auto& point = IDataDeserializer::safeCast<sight::data::Point>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    const int version = tree.get<int>("version", 0);
-    SIGHT_THROW_IF(
-        PointDeserializer::classname() << " is not implemented for version '" << version << "'.",
-        version > 1
-    );
+    IDataDeserializer::readVersion<sight::data::Point>(tree, 0, 1);
 
     const std::array<double, 3> coordinates = {
         tree.get<double>("x"),

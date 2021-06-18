@@ -23,6 +23,7 @@
 
 #include <core/crypto/AES256.hpp>
 #include <core/crypto/Base64.hpp>
+#include <core/exceptionmacros.hpp>
 
 #include <data/Patient.hpp>
 
@@ -35,31 +36,28 @@ namespace detail::data
 //------------------------------------------------------------------------------
 
 sight::data::Object::sptr PatientDeserializer::deserialize(
-    const zip::ArchiveReader::sptr& archive,
+    const zip::ArchiveReader::sptr&,
     const boost::property_tree::ptree& tree,
-    const std::map<std::string, sight::data::Object::sptr>& children,
+    const std::map<std::string, sight::data::Object::sptr>&,
     const sight::data::Object::sptr& object,
     const core::crypto::secure_string& password
 ) const
 {
     // Create or reuse the object
-    const auto& patient =
-        object ? sight::data::Patient::dynamicCast(object) : sight::data::Patient::New();
+    const auto& patient = IDataDeserializer::safeCast<sight::data::Patient>(object);
 
-    SIGHT_ASSERT(
-        "Object '" << patient->getClassname() << "' is not a '" << sight::data::Patient::classname() << "'",
-        patient
-    );
+    // Check version number. Not mandatory, but could help for future release
+    IDataDeserializer::readVersion<sight::data::Patient>(tree, 0, 1);
 
     // Deserialize patient data
     // Even if the session is not password protected, it is still possible to somewhat protect "sensitive" fields from
     // direct reading
     const auto& fieldPassword = password + patient->getUUID().c_str();
 
-    patient->setName(readFromTree(tree, "Name", fieldPassword));
-    patient->setPatientId(readFromTree(tree, "PatientId", fieldPassword));
-    patient->setBirthdate(readFromTree(tree, "Birthdate", fieldPassword));
-    patient->setSex(readFromTree(tree, "Sex", fieldPassword));
+    patient->setName(readString(tree, "Name", fieldPassword));
+    patient->setPatientId(readString(tree, "PatientId", fieldPassword));
+    patient->setBirthdate(readString(tree, "Birthdate", fieldPassword));
+    patient->setSex(readString(tree, "Sex", fieldPassword));
 
     return patient;
 }

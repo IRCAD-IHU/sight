@@ -25,6 +25,7 @@
 #include "data/ArrayDeserializer.hpp"
 #include "data/CalibrationInfoDeserializer.hpp"
 #include "data/CameraDeserializer.hpp"
+#include "data/CameraSeriesDeserializer.hpp"
 #include "data/CompositeDeserializer.hpp"
 #include "data/EquipmentDeserializer.hpp"
 #include "data/GenericDeserializer.hpp"
@@ -43,6 +44,7 @@
 #include <data/Boolean.hpp>
 #include <data/CalibrationInfo.hpp>
 #include <data/Camera.hpp>
+#include <data/CameraSeries.hpp>
 #include <data/Composite.hpp>
 #include <data/Equipment.hpp>
 #include <data/Float.hpp>
@@ -91,7 +93,8 @@ static const std::unordered_map<std::string, std::function<data::IDataDeserializ
     {sight::data::Point::classname(), &std::make_unique<data::PointDeserializer>},
     {sight::data::PointList::classname(), &std::make_unique<data::PointListDeserializer>},
     {sight::data::CalibrationInfo::classname(), &std::make_unique<data::CalibrationInfoDeserializer>},
-    {sight::data::Camera::classname(), &std::make_unique<data::CameraDeserializer>}
+    {sight::data::Camera::classname(), &std::make_unique<data::CameraDeserializer>},
+    {sight::data::CameraSeries::classname(), &std::make_unique<data::CameraSeriesDeserializer>}
 };
 
 // Return a writer from a data object class name

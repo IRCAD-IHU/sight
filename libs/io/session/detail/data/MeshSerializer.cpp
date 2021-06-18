@@ -40,22 +40,14 @@ void MeshSerializer::serialize(
     const zip::ArchiveWriter::sptr& archive,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
-    std::map<std::string, sight::data::Object::csptr>& children,
+    std::map<std::string, sight::data::Object::csptr>&,
     const core::crypto::secure_string& password
 ) const
 {
-    const auto& mesh = sight::data::Mesh::dynamicCast(object);
-    SIGHT_ASSERT(
-        "Object '"
-        << (object ? object->getClassname() : sight::data::Object::classname())
-        << "' is not a '"
-        << sight::data::Mesh::classname()
-        << "'",
-        mesh
-    );
+    const auto& mesh = IDataSerializer::safeCast<sight::data::Mesh>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    tree.put("version", 1);
+    IDataSerializer::writeVersion<sight::data::Mesh>(tree, 1);
 
     // Convert the mesh to VTK
     const auto& vtkMesh = vtkSmartPointer<vtkPolyData>::New();
