@@ -43,10 +43,10 @@ sight::data::Object::sptr EquipmentDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& equipment = IDataDeserializer::safeCast<sight::data::Equipment>(object);
+    const auto& equipment = safeCast<sight::data::Equipment>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::Equipment>(tree, 0, 1);
+    readVersion<sight::data::Equipment>(tree, 0, 1);
 
     equipment->setInstitutionName(readString(tree, "InstitutionName"));
 

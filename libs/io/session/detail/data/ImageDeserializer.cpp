@@ -48,10 +48,10 @@ sight::data::Object::sptr ImageDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& image = IDataDeserializer::safeCast<sight::data::Image>(object);
+    const auto& image = safeCast<sight::data::Image>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::Image>(tree, 0, 1);
+    readVersion<sight::data::Image>(tree, 0, 1);
 
     // Create the istream from the input file inside the archive
     const auto& uuid    = tree.get<std::string>("uuid");

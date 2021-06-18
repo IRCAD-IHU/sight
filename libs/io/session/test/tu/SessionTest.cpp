@@ -31,6 +31,7 @@
 #include <core/data/CameraSeries.hpp>
 #include <core/data/Color.hpp>
 #include <core/data/Composite.hpp>
+#include <core/data/Edge.hpp>
 #include <core/data/Equipment.hpp>
 #include <core/data/Float.hpp>
 #include <core/data/Image.hpp>
@@ -1846,6 +1847,55 @@ void SessionTest::colorTest()
         CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[1], color->green(), FLOAT_EPSILON);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[2], color->blue(), FLOAT_EPSILON);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[3], color->alpha(), FLOAT_EPSILON);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::edgeTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "edgeTest.zip";
+
+    const std::string from(UUID::generateUUID());
+    const std::string to(UUID::generateUUID());
+    const std::string nature(UUID::generateUUID());
+
+    // Test serialization
+    {
+        // Create vector
+        auto edge = data::Edge::New();
+        edge->setNature(nature);
+        edge->setIdentifiers(from, to);
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(edge);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test value
+        const auto& edge = data::Edge::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(edge);
+
+        CPPUNIT_ASSERT_EQUAL(from, edge->getFromPortID());
+        CPPUNIT_ASSERT_EQUAL(to, edge->getToPortID());
+        CPPUNIT_ASSERT_EQUAL(nature, edge->getNature());
     }
 }
 

@@ -42,10 +42,10 @@ sight::data::Object::sptr VectorDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& vector = IDataDeserializer::safeCast<sight::data::Vector>(object);
+    const auto& vector = safeCast<sight::data::Vector>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::Vector>(tree, 0, 1);
+    readVersion<sight::data::Vector>(tree, 0, 1);
 
     // Convert the map into a vector
     // We assume the key is the index

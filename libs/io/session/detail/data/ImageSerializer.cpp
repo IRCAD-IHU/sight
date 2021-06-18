@@ -44,10 +44,10 @@ void ImageSerializer::serialize(
     const core::crypto::secure_string& password
 ) const
 {
-    const auto& image = IDataSerializer::safeCast<sight::data::Image>(object);
+    const auto& image = safeCast<sight::data::Image>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::Image>(tree, 1);
+    writeVersion<sight::data::Image>(tree, 1);
 
     // Convert the image to VTK
     const auto& vtkImage = vtkSmartPointer<vtkImageData>::New();

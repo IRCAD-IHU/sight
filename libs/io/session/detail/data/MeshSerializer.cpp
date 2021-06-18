@@ -44,10 +44,10 @@ void MeshSerializer::serialize(
     const core::crypto::secure_string& password
 ) const
 {
-    const auto& mesh = IDataSerializer::safeCast<sight::data::Mesh>(object);
+    const auto& mesh = safeCast<sight::data::Mesh>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::Mesh>(tree, 1);
+    writeVersion<sight::data::Mesh>(tree, 1);
 
     // Convert the mesh to VTK
     const auto& vtkMesh = vtkSmartPointer<vtkPolyData>::New();

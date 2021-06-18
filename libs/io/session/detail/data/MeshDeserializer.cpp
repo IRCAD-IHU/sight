@@ -48,10 +48,10 @@ sight::data::Object::sptr MeshDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& mesh = IDataDeserializer::safeCast<sight::data::Mesh>(object);
+    const auto& mesh = safeCast<sight::data::Mesh>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::Mesh>(tree, 0, 1);
+    readVersion<sight::data::Mesh>(tree, 0, 1);
 
     // Create the istream from the input file inside the archive
     const auto& uuid    = tree.get<std::string>("uuid");

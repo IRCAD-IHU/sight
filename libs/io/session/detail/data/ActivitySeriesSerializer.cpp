@@ -43,10 +43,10 @@ void ActivitySeriesSerializer::serialize(
     const core::crypto::secure_string& password
 ) const
 {
-    const auto& activitySeries = IDataSerializer::safeCast<sight::data::ActivitySeries>(object);
+    const auto& activitySeries = safeCast<sight::data::ActivitySeries>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::ActivitySeries>(tree, 1);
+    writeVersion<sight::data::ActivitySeries>(tree, 1);
 
     // Since ActivitySeries inherits from Series, we could use SeriesSerializer
     const SeriesSerializer seriesSerializer;

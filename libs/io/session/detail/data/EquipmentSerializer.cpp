@@ -40,10 +40,10 @@ void EquipmentSerializer::serialize(
     const core::crypto::secure_string&
 ) const
 {
-    const auto& equipment = IDataSerializer::safeCast<sight::data::Equipment>(object);
+    const auto& equipment = safeCast<sight::data::Equipment>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::Equipment>(tree, 1);
+    writeVersion<sight::data::Equipment>(tree, 1);
 
     writeString(tree, "InstitutionName", equipment->getInstitutionName());
 }

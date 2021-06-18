@@ -42,10 +42,10 @@ sight::data::Object::sptr ColorDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& color = IDataDeserializer::safeCast<sight::data::Color>(object);
+    const auto& color = safeCast<sight::data::Color>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::Color>(tree, 0, 1);
+    readVersion<sight::data::Color>(tree, 0, 1);
 
     color->setRGBA(
         tree.get<float>("red"),

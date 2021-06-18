@@ -44,10 +44,10 @@ sight::data::Object::sptr PatientDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& patient = IDataDeserializer::safeCast<sight::data::Patient>(object);
+    const auto& patient = safeCast<sight::data::Patient>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::Patient>(tree, 0, 1);
+    readVersion<sight::data::Patient>(tree, 0, 1);
 
     // Deserialize patient data
     // Even if the session is not password protected, it is still possible to somewhat protect "sensitive" fields from

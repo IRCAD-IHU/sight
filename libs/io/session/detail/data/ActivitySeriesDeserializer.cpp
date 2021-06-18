@@ -46,10 +46,10 @@ sight::data::Object::sptr ActivitySeriesDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& activitySeries = IDataDeserializer::safeCast<sight::data::ActivitySeries>(object);
+    const auto& activitySeries = safeCast<sight::data::ActivitySeries>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::ActivitySeries>(tree, 0, 1);
+    readVersion<sight::data::ActivitySeries>(tree, 0, 1);
 
     // Since ActivitySeries inherits from Series, we could use SeriesDeserializer
     const SeriesDeserializer seriesDeserializer;

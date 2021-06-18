@@ -42,10 +42,10 @@ sight::data::Object::sptr CompositeDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& composite = IDataDeserializer::safeCast<sight::data::Composite>(object);
+    const auto& composite = safeCast<sight::data::Composite>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::Composite>(tree, 0, 1);
+    readVersion<sight::data::Composite>(tree, 0, 1);
 
     composite->setContainer(children);
 

@@ -38,10 +38,10 @@ void CompositeSerializer::serialize(
     const core::crypto::secure_string&
 ) const
 {
-    const auto& composite = IDataSerializer::safeCast<sight::data::Composite>(object);
+    const auto& composite = safeCast<sight::data::Composite>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::Composite>(tree, 1);
+    writeVersion<sight::data::Composite>(tree, 1);
 
     // Composite is map of child object..
     const auto& container = composite->getContainer();

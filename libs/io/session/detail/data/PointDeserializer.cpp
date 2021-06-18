@@ -42,10 +42,10 @@ sight::data::Object::sptr PointDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& point = IDataDeserializer::safeCast<sight::data::Point>(object);
+    const auto& point = safeCast<sight::data::Point>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::Point>(tree, 0, 1);
+    readVersion<sight::data::Point>(tree, 0, 1);
 
     const std::array<double, 3> coordinates = {
         tree.get<double>("x"),

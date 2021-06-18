@@ -19,9 +19,11 @@
  *
  ***********************************************************************/
 
-#include "PointListSerializer.hpp"
+#include "EdgeDeserializer.hpp"
 
-#include <data/PointList.hpp>
+#include <core/exceptionmacros.hpp>
+
+#include <data/Edge.hpp>
 
 namespace sight::io::session
 {
@@ -29,26 +31,30 @@ namespace sight::io::session
 namespace detail::data
 {
 
-/// Serialization function
-void PointListSerializer::serialize(
-    const zip::ArchiveWriter::sptr&,
-    boost::property_tree::ptree& tree,
-    const sight::data::Object::csptr& object,
-    std::map<std::string, sight::data::Object::csptr>& children,
+//------------------------------------------------------------------------------
+
+sight::data::Object::sptr EdgeDeserializer::deserialize(
+    const zip::ArchiveReader::sptr&,
+    const boost::property_tree::ptree& tree,
+    const std::map<std::string, sight::data::Object::sptr>&,
+    const sight::data::Object::sptr& object,
     const core::crypto::secure_string&
 ) const
 {
-    const auto& pointList = safeCast<sight::data::PointList>(object);
+    // Create or reuse the object
+    const auto& edge = safeCast<sight::data::Edge>(object);
 
-    // Add a version number. Not mandatory, but could help for future release
-    writeVersion<sight::data::PointList>(tree, 1);
+    // Check version number. Not mandatory, but could help for future release
+    readVersion<sight::data::Edge>(tree, 0, 1);
 
-    // Add points to children list
-    int index = 0;
-    for(const auto& point : pointList->getPoints())
-    {
-        children[std::to_string(index++)] = point;
-    }
+    edge->setIdentifiers(
+        readString(tree, "FromPortID"),
+        readString(tree, "ToPortID")
+    );
+
+    edge->setNature(readString(tree, "Nature"));
+
+    return edge;
 }
 
 } // detail::data

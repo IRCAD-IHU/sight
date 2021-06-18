@@ -41,10 +41,10 @@ sight::data::Object::sptr StringDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& string = IDataDeserializer::safeCast<sight::data::String>(object);
+    const auto& string = safeCast<sight::data::String>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::String>(tree, 0, 1);
+    readVersion<sight::data::String>(tree, 0, 1);
 
     // Assign the value
     string->setValue(readString(tree, "Value"));

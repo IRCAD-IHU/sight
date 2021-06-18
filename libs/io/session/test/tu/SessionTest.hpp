@@ -56,6 +56,7 @@ public:
     CPPUNIT_TEST(cameraTest);
     CPPUNIT_TEST(cameraSeriesTest);
     CPPUNIT_TEST(colorTest);
+    CPPUNIT_TEST(edgeTest);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -86,6 +87,7 @@ public:
     void cameraTest();
     void cameraSeriesTest();
     void colorTest();
+    void edgeTest();
 };
 
 } // namespace ut

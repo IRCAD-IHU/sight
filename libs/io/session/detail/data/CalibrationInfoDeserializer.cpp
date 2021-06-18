@@ -43,10 +43,10 @@ sight::data::Object::sptr CalibrationInfoDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& calibrationInfo = IDataDeserializer::safeCast<sight::data::CalibrationInfo>(object);
+    const auto& calibrationInfo = safeCast<sight::data::CalibrationInfo>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::CalibrationInfo>(tree, 0, 1);
+    readVersion<sight::data::CalibrationInfo>(tree, 0, 1);
 
     // Deserialize children
     for(std::size_t index = 0, end = children.size() ; index < end ; ++index)
@@ -62,8 +62,8 @@ sight::data::Object::sptr CalibrationInfoDeserializer::deserialize(
             break;
         }
 
-        const auto& image     = IDataDeserializer::safeCast<sight::data::Image>(imageIt->second);
-        const auto& pointList = IDataDeserializer::safeCast<sight::data::PointList>(pointListIt->second);
+        const auto& image     = safeCast<sight::data::Image>(imageIt->second);
+        const auto& pointList = safeCast<sight::data::PointList>(pointListIt->second);
 
         calibrationInfo->addRecord(image, pointList);
     }

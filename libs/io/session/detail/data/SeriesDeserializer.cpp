@@ -46,10 +46,10 @@ sight::data::Object::sptr SeriesDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& series = IDataDeserializer::safeCast<sight::data::Series>(object);
+    const auto& series = safeCast<sight::data::Series>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::Series>(tree, 0, 1);
+    readVersion<sight::data::Series>(tree, 0, 1);
 
     // Set children from map
     series->setPatient(sight::data::Patient::dynamicCast(children.at("Patient")));

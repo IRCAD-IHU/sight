@@ -43,10 +43,10 @@ void SeriesSerializer::serialize(
     const core::crypto::secure_string&
 ) const
 {
-    const auto& series = IDataSerializer::safeCast<sight::data::Series>(object);
+    const auto& series = safeCast<sight::data::Series>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::Series>(tree, 1);
+    writeVersion<sight::data::Series>(tree, 1);
 
     // Fill children map
     children["Patient"]   = series->getPatient();

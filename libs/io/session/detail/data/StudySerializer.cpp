@@ -40,10 +40,10 @@ void StudySerializer::serialize(
     const core::crypto::secure_string&
 ) const
 {
-    const auto& study = IDataSerializer::safeCast<sight::data::Study>(object);
+    const auto& study = safeCast<sight::data::Study>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::Study>(tree, 1);
+    writeVersion<sight::data::Study>(tree, 1);
 
     writeString(tree, "InstanceUID", study->getInstanceUID());
     writeString(tree, "StudyID", study->getStudyID());

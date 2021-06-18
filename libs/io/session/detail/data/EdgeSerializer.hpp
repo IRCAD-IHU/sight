@@ -31,28 +31,27 @@ namespace sight::io::session
 namespace detail::data
 {
 
-/// Class used to serialize a generic object to a session
-template<typename T>
-class GenericSerializer : public IDataSerializer
+/// Class used to serialize composite object to a session
+class EdgeSerializer : public IDataSerializer
 {
 public:
 
-    SIGHT_DECLARE_CLASS(GenericSerializer<T>, IDataSerializer);
+    SIGHT_DECLARE_CLASS(EdgeSerializer, IDataSerializer);
 
     /// Delete default copy constructors and assignment operators
-    GenericSerializer(const GenericSerializer&)            = delete;
-    GenericSerializer(GenericSerializer&&)                 = delete;
-    GenericSerializer& operator=(const GenericSerializer&) = delete;
-    GenericSerializer& operator=(GenericSerializer&&)      = delete;
+    EdgeSerializer(const EdgeSerializer&)            = delete;
+    EdgeSerializer(EdgeSerializer&&)                 = delete;
+    EdgeSerializer& operator=(const EdgeSerializer&) = delete;
+    EdgeSerializer& operator=(EdgeSerializer&&)      = delete;
 
     /// Default constructor
-    GenericSerializer() = default;
+    EdgeSerializer() = default;
 
     /// Default destructor
-    ~GenericSerializer() override = default;
+    ~EdgeSerializer() override = default;
 
     /// Serialization function
-    inline void serialize(
+    void serialize(
         const zip::ArchiveWriter::sptr& archive,
         boost::property_tree::ptree& tree,
         const sight::data::Object::csptr& object,
@@ -60,25 +59,6 @@ public:
         const core::crypto::secure_string& password = ""
     ) const override;
 };
-
-//------------------------------------------------------------------------------
-
-template<typename T>
-void GenericSerializer<T>::serialize(
-    const zip::ArchiveWriter::sptr&,
-    boost::property_tree::ptree& tree,
-    const sight::data::Object::csptr& object,
-    std::map<std::string, sight::data::Object::csptr>&,
-    const core::crypto::secure_string&
-) const
-{
-    const auto& newObject = safeCast<T>(object);
-
-    // Add a version number. Not mandatory, but could help for future release
-    writeVersion<T>(tree, 1);
-
-    tree.put("Value", newObject->getValue());
-}
 
 } // namespace detail::data
 

@@ -44,10 +44,10 @@ sight::data::Object::sptr CameraSeriesDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& cameraSeries = IDataDeserializer::safeCast<sight::data::CameraSeries>(object);
+    const auto& cameraSeries = safeCast<sight::data::CameraSeries>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::CameraSeries>(tree, 0, 1);
+    readVersion<sight::data::CameraSeries>(tree, 0, 1);
 
     // Since CameraSeries inherits from Series, we could use SeriesDeserializer
     const SeriesDeserializer seriesDeserializer;
@@ -64,7 +64,7 @@ sight::data::Object::sptr CameraSeriesDeserializer::deserialize(
             break;
         }
 
-        const auto& camera = IDataDeserializer::safeCast<sight::data::Camera>(cameraIt->second);
+        const auto& camera = safeCast<sight::data::Camera>(cameraIt->second);
         cameraSeries->addCamera(camera);
     }
 

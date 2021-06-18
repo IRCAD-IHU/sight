@@ -41,10 +41,10 @@ void PatientSerializer::serialize(
     const core::crypto::secure_string& password
 ) const
 {
-    const auto& patient = IDataSerializer::safeCast<sight::data::Patient>(object);
+    const auto& patient = safeCast<sight::data::Patient>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::Patient>(tree, 1);
+    writeVersion<sight::data::Patient>(tree, 1);
 
     // Serialize patient data
     // Even if the session is not password protected,

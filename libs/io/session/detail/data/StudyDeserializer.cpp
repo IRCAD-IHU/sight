@@ -43,10 +43,10 @@ sight::data::Object::sptr StudyDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& study = IDataDeserializer::safeCast<sight::data::Study>(object);
+    const auto& study = safeCast<sight::data::Study>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::Study>(tree, 0, 1);
+    readVersion<sight::data::Study>(tree, 0, 1);
 
     study->setInstanceUID(readString(tree, "InstanceUID"));
     study->setStudyID(readString(tree, "StudyID"));

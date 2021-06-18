@@ -38,10 +38,10 @@ void CameraSerializer::serialize(
     const core::crypto::secure_string&
 ) const
 {
-    const auto& camera = IDataSerializer::safeCast<sight::data::Camera>(object);
+    const auto& camera = safeCast<sight::data::Camera>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::Camera>(tree, 1);
+    writeVersion<sight::data::Camera>(tree, 1);
 
     tree.put("Width", camera->getWidth());
     tree.put("Height", camera->getHeight());
@@ -61,12 +61,12 @@ void CameraSerializer::serialize(
     tree.put("Skew", camera->getSkew());
 
     tree.put("IsCalibrated", camera->getIsCalibrated());
-    this->writeString(tree, "Description", camera->getDescription());
-    this->writeString(tree, "CameraID", camera->getCameraID());
+    writeString(tree, "Description", camera->getDescription());
+    writeString(tree, "CameraID", camera->getCameraID());
     tree.put("MaximumFrameRate", camera->getMaximumFrameRate());
     tree.put("PixelFormat", camera->getPixelFormat());
-    this->writeString(tree, "VideoFile", camera->getVideoFile().string());
-    this->writeString(tree, "StreamUrl", camera->getStreamUrl());
+    writeString(tree, "VideoFile", camera->getVideoFile().string());
+    writeString(tree, "StreamUrl", camera->getStreamUrl());
     tree.put("CameraSource", camera->getCameraSource());
     tree.put("Scale", camera->getScale());
 }

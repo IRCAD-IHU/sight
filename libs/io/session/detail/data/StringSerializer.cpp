@@ -38,10 +38,10 @@ void StringSerializer::serialize(
     const core::crypto::secure_string&
 ) const
 {
-    const auto& string = IDataSerializer::safeCast<sight::data::String>(object);
+    const auto& string = safeCast<sight::data::String>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::String>(tree, 1);
+    writeVersion<sight::data::String>(tree, 1);
 
     writeString(tree, "Value", string->getValue());
 }

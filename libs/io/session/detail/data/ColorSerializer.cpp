@@ -38,10 +38,10 @@ void ColorSerializer::serialize(
     const core::crypto::secure_string&
 ) const
 {
-    const auto& color = IDataSerializer::safeCast<sight::data::Color>(object);
+    const auto& color = safeCast<sight::data::Color>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::Color>(tree, 1);
+    writeVersion<sight::data::Color>(tree, 1);
 
     tree.put("red", color->red());
     tree.put("green", color->green());

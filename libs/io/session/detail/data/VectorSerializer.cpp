@@ -38,10 +38,10 @@ void VectorSerializer::serialize(
     const core::crypto::secure_string&
 ) const
 {
-    const auto& vector = IDataSerializer::safeCast<sight::data::Vector>(object);
+    const auto& vector = safeCast<sight::data::Vector>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::Vector>(tree, 1);
+    writeVersion<sight::data::Vector>(tree, 1);
 
     int index = 0;
     for(const auto& child : vector->getContainer())

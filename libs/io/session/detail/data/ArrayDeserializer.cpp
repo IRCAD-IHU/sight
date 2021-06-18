@@ -42,10 +42,10 @@ sight::data::Object::sptr ArrayDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& array = IDataDeserializer::safeCast<sight::data::Array>(object);
+    const auto& array = safeCast<sight::data::Array>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::Array>(tree, 0, 1);
+    readVersion<sight::data::Array>(tree, 0, 1);
 
     // Type
     array->setType(tree.get<std::string>("Type"));

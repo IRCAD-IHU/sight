@@ -38,10 +38,10 @@ void CalibrationInfoSerializer::serialize(
     const core::crypto::secure_string&
 ) const
 {
-    const auto& calibrationInfo = IDataSerializer::safeCast<sight::data::CalibrationInfo>(object);
+    const auto& calibrationInfo = safeCast<sight::data::CalibrationInfo>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::CalibrationInfo>(tree, 1);
+    writeVersion<sight::data::CalibrationInfo>(tree, 1);
 
     // Images
     int index = 0;

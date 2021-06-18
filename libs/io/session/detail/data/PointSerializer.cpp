@@ -38,10 +38,10 @@ void PointSerializer::serialize(
     const core::crypto::secure_string&
 ) const
 {
-    const auto& point = IDataSerializer::safeCast<sight::data::Point>(object);
+    const auto& point = safeCast<sight::data::Point>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::Point>(tree, 1);
+    writeVersion<sight::data::Point>(tree, 1);
 
     const auto& coordinate = point->getCoord();
     tree.put("x", coordinate[0]);

@@ -42,10 +42,10 @@ void CameraSeriesSerializer::serialize(
     const core::crypto::secure_string& password
 ) const
 {
-    const auto& cameraSeries = IDataSerializer::safeCast<sight::data::CameraSeries>(object);
+    const auto& cameraSeries = safeCast<sight::data::CameraSeries>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::CameraSeries>(tree, 1);
+    writeVersion<sight::data::CameraSeries>(tree, 1);
 
     // Since CameraSeries inherits from Series, we could use SeriesSerializer
     const SeriesSerializer seriesSerializer;

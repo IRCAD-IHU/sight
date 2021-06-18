@@ -43,10 +43,10 @@ sight::data::Object::sptr PointListDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& pointList = IDataDeserializer::safeCast<sight::data::PointList>(object);
+    const auto& pointList = safeCast<sight::data::PointList>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    IDataDeserializer::readVersion<sight::data::PointList>(tree, 0, 1);
+    readVersion<sight::data::PointList>(tree, 0, 1);
 
     // Convert the map into a vector
     // We assume the key is the index

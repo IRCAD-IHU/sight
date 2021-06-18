@@ -38,10 +38,10 @@ void ArraySerializer::serialize(
     const core::crypto::secure_string& password
 ) const
 {
-    const auto& array = IDataSerializer::safeCast<sight::data::Array>(object);
+    const auto& array = safeCast<sight::data::Array>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    IDataSerializer::writeVersion<sight::data::Array>(tree, 1);
+    writeVersion<sight::data::Array>(tree, 1);
 
     // Size
     boost::property_tree::ptree sizesTree;
