@@ -26,6 +26,7 @@
 #include "data/CalibrationInfoSerializer.hpp"
 #include "data/CameraSerializer.hpp"
 #include "data/CameraSeriesSerializer.hpp"
+#include "data/ColorSerializer.hpp"
 #include "data/CompositeSerializer.hpp"
 #include "data/EquipmentSerializer.hpp"
 #include "data/GenericSerializer.hpp"
@@ -45,6 +46,7 @@
 #include <data/CalibrationInfo.hpp>
 #include <data/Camera.hpp>
 #include <data/CameraSeries.hpp>
+#include <data/Color.hpp>
 #include <data/Composite.hpp>
 #include <data/Equipment.hpp>
 #include <data/Float.hpp>
@@ -92,7 +94,8 @@ static const std::unordered_map<std::string, std::function<data::IDataSerializer
     {sight::data::PointList::classname(), &std::make_unique<data::PointListSerializer>},
     {sight::data::CalibrationInfo::classname(), &std::make_unique<data::CalibrationInfoSerializer>},
     {sight::data::Camera::classname(), &std::make_unique<data::CameraSerializer>},
-    {sight::data::CameraSeries::classname(), &std::make_unique<data::CameraSeriesSerializer>}
+    {sight::data::CameraSeries::classname(), &std::make_unique<data::CameraSeriesSerializer>},
+    {sight::data::Color::classname(), &std::make_unique<data::ColorSerializer>}
 };
 
 // Return a writer from a data object class name

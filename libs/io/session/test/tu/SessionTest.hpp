@@ -55,6 +55,7 @@ public:
     CPPUNIT_TEST(calibrationInfoTest);
     CPPUNIT_TEST(cameraTest);
     CPPUNIT_TEST(cameraSeriesTest);
+    CPPUNIT_TEST(colorTest);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -84,6 +85,7 @@ public:
     void calibrationInfoTest();
     void cameraTest();
     void cameraSeriesTest();
+    void colorTest();
 };
 
 } // namespace ut

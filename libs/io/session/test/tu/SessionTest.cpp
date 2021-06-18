@@ -29,6 +29,7 @@
 #include <core/data/CalibrationInfo.hpp>
 #include <core/data/Camera.hpp>
 #include <core/data/CameraSeries.hpp>
+#include <core/data/Color.hpp>
 #include <core/data/Composite.hpp>
 #include <core/data/Equipment.hpp>
 #include <core/data/Float.hpp>
@@ -1793,6 +1794,58 @@ void SessionTest::cameraSeriesTest()
             const auto& camera = cameraSeries->getCamera(i);
             CPPUNIT_ASSERT_EQUAL(cameraIDs[i], camera->getCameraID());
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::colorTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "colorTest.zip";
+
+    const std::array<float, 4> rgba = {
+        1.111F,
+        2.222F,
+        3.333F,
+        4.444F
+    };
+
+    // Test serialization
+    {
+        // Create vector
+        auto color = data::Color::New();
+        color->setRGBA(rgba[0], rgba[1], rgba[2], rgba[3]);
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(color);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test value
+        const auto& color = data::Color::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(color);
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[0], color->red(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[1], color->green(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[2], color->blue(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[3], color->alpha(), FLOAT_EPSILON);
     }
 }
 
