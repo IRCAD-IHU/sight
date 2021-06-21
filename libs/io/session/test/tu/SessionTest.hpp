@@ -59,6 +59,7 @@ public:
     CPPUNIT_TEST(edgeTest);
     CPPUNIT_TEST(portTest);
     CPPUNIT_TEST(nodeTest);
+    CPPUNIT_TEST(graphTest);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -92,6 +93,7 @@ public:
     void edgeTest();
     void portTest();
     void nodeTest();
+    void graphTest();
 };
 
 } // namespace ut

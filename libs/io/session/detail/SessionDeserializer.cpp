@@ -31,6 +31,7 @@
 #include "data/EdgeDeserializer.hpp"
 #include "data/EquipmentDeserializer.hpp"
 #include "data/GenericDeserializer.hpp"
+#include "data/GraphDeserializer.hpp"
 #include "data/ImageDeserializer.hpp"
 #include "data/MeshDeserializer.hpp"
 #include "data/NodeDeserializer.hpp"
@@ -54,6 +55,7 @@
 #include <data/Edge.hpp>
 #include <data/Equipment.hpp>
 #include <data/Float.hpp>
+#include <data/Graph.hpp>
 #include <data/Image.hpp>
 #include <data/Integer.hpp>
 #include <data/Mesh.hpp>
@@ -106,7 +108,8 @@ static const std::unordered_map<std::string, std::function<data::IDataDeserializ
     {sight::data::Color::classname(), &std::make_unique<data::ColorDeserializer>},
     {sight::data::Edge::classname(), &std::make_unique<data::EdgeDeserializer>},
     {sight::data::Port::classname(), &std::make_unique<data::PortDeserializer>},
-    {sight::data::Node::classname(), &std::make_unique<data::NodeDeserializer>}
+    {sight::data::Node::classname(), &std::make_unique<data::NodeDeserializer>},
+    {sight::data::Graph::classname(), &std::make_unique<data::GraphDeserializer>}
 };
 
 // Return a writer from a data object class name

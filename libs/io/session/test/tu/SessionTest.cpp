@@ -34,6 +34,7 @@
 #include <core/data/Edge.hpp>
 #include <core/data/Equipment.hpp>
 #include <core/data/Float.hpp>
+#include <core/data/Graph.hpp>
 #include <core/data/Image.hpp>
 #include <core/data/Integer.hpp>
 #include <core/data/iterator/MeshIterators.hpp>
@@ -1962,18 +1963,18 @@ void SessionTest::nodeTest()
     const std::string object(UUID::generateUUID());
 
     std::array<std::array<std::string, 2>, 3> inputs = {
-        {{UUID::generateUUID(), UUID::generateUUID()},
+        {
             {UUID::generateUUID(), UUID::generateUUID()},
-            {UUID::generateUUID(), UUID::generateUUID()
-            }
+            {UUID::generateUUID(), UUID::generateUUID()},
+            {UUID::generateUUID(), UUID::generateUUID()}
         }
     };
 
     std::array<std::array<std::string, 2>, 3> outputs = {
-        {{UUID::generateUUID(), UUID::generateUUID()},
+        {
             {UUID::generateUUID(), UUID::generateUUID()},
-            {UUID::generateUUID(), UUID::generateUUID()
-            }
+            {UUID::generateUUID(), UUID::generateUUID()},
+            {UUID::generateUUID(), UUID::generateUUID()}
         }
     };
 
@@ -2042,6 +2043,83 @@ void SessionTest::nodeTest()
         {
             CPPUNIT_ASSERT_EQUAL(outputs[index][0], outputPorts[index]->getIdentifier());
             CPPUNIT_ASSERT_EQUAL(outputs[index][1], outputPorts[index]->getType());
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::graphTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "graphTest.zip";
+
+    // Test vector
+    const std::string from(UUID::generateUUID());
+    const std::string to(UUID::generateUUID());
+    const std::string nature(UUID::generateUUID());
+
+    const std::string upString(UUID::generateUUID());
+    const std::string downString(UUID::generateUUID());
+
+    // Test serialization
+    {
+        // Create graph
+        auto upNode = data::Node::New();
+        upNode->setObject(data::String::New(upString));
+
+        auto downNode = data::Node::New();
+        downNode->setObject(data::String::New(downString));
+
+        auto edge = data::Edge::New();
+        edge->setNature(nature);
+        edge->setIdentifiers(from, to);
+
+        auto graph = data::Graph::New();
+        graph->addNode(upNode);
+        graph->addNode(downNode);
+        graph->addEdge(edge, upNode, downNode);
+
+        const std::string object(UUID::generateUUID());
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(graph);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test values
+        const auto& graph = data::Graph::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(graph);
+
+        for(const auto& connection : graph->getConnections())
+        {
+            CPPUNIT_ASSERT_EQUAL(nature, connection.first->getNature());
+            CPPUNIT_ASSERT_EQUAL(from, connection.first->getFromPortID());
+            CPPUNIT_ASSERT_EQUAL(to, connection.first->getToPortID());
+
+            const auto& upObject = data::String::dynamicCast(connection.second.first->getObject());
+            CPPUNIT_ASSERT(upObject);
+            CPPUNIT_ASSERT_EQUAL(upString, upObject->getValue());
+
+            const auto& downObject = data::String::dynamicCast(connection.second.second->getObject());
+            CPPUNIT_ASSERT(downObject);
+            CPPUNIT_ASSERT_EQUAL(downString, downObject->getValue());
         }
     }
 }
