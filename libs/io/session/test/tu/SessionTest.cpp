@@ -41,6 +41,7 @@
 #include <core/data/iterator/MeshIterators.hpp>
 #include <core/data/iterator/MeshIterators.hxx>
 #include <core/data/Landmarks.hpp>
+#include <core/data/Line.hpp>
 #include <core/data/Node.hpp>
 #include <core/data/Patient.hpp>
 #include <core/data/Point.hpp>
@@ -2222,7 +2223,7 @@ void SessionTest::landmarksTest()
 
     // Test serialization
     {
-        // Create histogram
+        // Create landmarks
         auto landmarks = data::Landmarks::New();
 
         landmarks->addGroup(
@@ -2287,6 +2288,73 @@ void SessionTest::landmarksTest()
             {
                 CPPUNIT_ASSERT_DOUBLES_EQUAL(points[i][j], group.m_points[i][j], DOUBLE_EPSILON);
             }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::lineTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "lineTest.zip";
+
+    // Test vector
+    const std::array<double, 3> position  = {0.1, 0.2, 0.3};
+    const std::array<double, 3> direction = {1.1, 2.2, 3.3};
+
+    // Test serialization
+    {
+        // Create a position, a direction and a line
+        auto positionPoint = data::Point::New();
+        positionPoint->setCoord(position);
+
+        auto directionPoint = data::Point::New();
+        directionPoint->setCoord(direction);
+
+        auto line = data::Line::New();
+        line->setPosition(positionPoint);
+        line->setDirection(directionPoint);
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(line);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test values
+        const auto& line = data::Line::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(line);
+
+        const auto& positionPoint = line->getPosition();
+        const auto& positionCoord = positionPoint->getCoord();
+
+        for(size_t i = 0, end = position.size() ; i < end ; ++i)
+        {
+            CPPUNIT_ASSERT_DOUBLES_EQUAL(position[i], positionCoord[i], DOUBLE_EPSILON);
+        }
+
+        const auto& directionPoint = line->getDirection();
+        const auto& directionCoord = directionPoint->getCoord();
+
+        for(size_t i = 0, end = direction.size() ; i < end ; ++i)
+        {
+            CPPUNIT_ASSERT_DOUBLES_EQUAL(direction[i], directionCoord[i], DOUBLE_EPSILON);
         }
     }
 }
