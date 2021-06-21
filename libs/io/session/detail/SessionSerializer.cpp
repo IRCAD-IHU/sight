@@ -34,6 +34,7 @@
 #include "data/GraphSerializer.hpp"
 #include "data/HistogramSerializer.hpp"
 #include "data/ImageSerializer.hpp"
+#include "data/LandmarksSerializer.hpp"
 #include "data/MeshSerializer.hpp"
 #include "data/NodeSerializer.hpp"
 #include "data/PatientSerializer.hpp"
@@ -60,6 +61,7 @@
 #include <data/Histogram.hpp>
 #include <data/Image.hpp>
 #include <data/Integer.hpp>
+#include <data/Landmarks.hpp>
 #include <data/Mesh.hpp>
 #include <data/mt/locked_ptr.hpp>
 #include <data/Node.hpp>
@@ -110,7 +112,8 @@ static const std::unordered_map<std::string, std::function<data::IDataSerializer
     {sight::data::Port::classname(), &std::make_unique<data::PortSerializer>},
     {sight::data::Node::classname(), &std::make_unique<data::NodeSerializer>},
     {sight::data::Graph::classname(), &std::make_unique<data::GraphSerializer>},
-    {sight::data::Histogram::classname(), &std::make_unique<data::HistogramSerializer>}
+    {sight::data::Histogram::classname(), &std::make_unique<data::HistogramSerializer>},
+    {sight::data::Landmarks::classname(), &std::make_unique<data::LandmarksSerializer>}
 };
 
 // Return a writer from a data object class name

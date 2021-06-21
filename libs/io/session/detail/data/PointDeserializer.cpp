@@ -48,9 +48,9 @@ sight::data::Object::sptr PointDeserializer::deserialize(
     readVersion<sight::data::Point>(tree, 0, 1);
 
     const std::array<double, 3> coordinates = {
-        tree.get<double>("x"),
-        tree.get<double>("y"),
-        tree.get<double>("z")
+        tree.get<double>("X"),
+        tree.get<double>("Y"),
+        tree.get<double>("Z")
     };
 
     point->setCoord(coordinates);

@@ -44,9 +44,9 @@ void PointSerializer::serialize(
     writeVersion<sight::data::Point>(tree, 1);
 
     const auto& coordinate = point->getCoord();
-    tree.put("x", coordinate[0]);
-    tree.put("y", coordinate[1]);
-    tree.put("z", coordinate[2]);
+    tree.put("X", coordinate[0]);
+    tree.put("Y", coordinate[1]);
+    tree.put("Z", coordinate[2]);
 }
 
 } // detail::data

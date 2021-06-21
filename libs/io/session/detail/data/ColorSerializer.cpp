@@ -43,10 +43,10 @@ void ColorSerializer::serialize(
     // Add a version number. Not mandatory, but could help for future release
     writeVersion<sight::data::Color>(tree, 1);
 
-    tree.put("red", color->red());
-    tree.put("green", color->green());
-    tree.put("blue", color->blue());
-    tree.put("alpha", color->alpha());
+    tree.put("Red", color->red());
+    tree.put("Green", color->green());
+    tree.put("Blue", color->blue());
+    tree.put("Alpha", color->alpha());
 }
 
 } // detail::data

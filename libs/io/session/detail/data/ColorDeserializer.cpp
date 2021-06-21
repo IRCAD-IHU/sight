@@ -48,10 +48,10 @@ sight::data::Object::sptr ColorDeserializer::deserialize(
     readVersion<sight::data::Color>(tree, 0, 1);
 
     color->setRGBA(
-        tree.get<float>("red"),
-        tree.get<float>("green"),
-        tree.get<float>("blue"),
-        tree.get<float>("alpha")
+        tree.get<float>("Red"),
+        tree.get<float>("Green"),
+        tree.get<float>("Blue"),
+        tree.get<float>("Alpha")
     );
 
     return color;

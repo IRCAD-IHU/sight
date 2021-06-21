@@ -40,6 +40,7 @@
 #include <core/data/Integer.hpp>
 #include <core/data/iterator/MeshIterators.hpp>
 #include <core/data/iterator/MeshIterators.hxx>
+#include <core/data/Landmarks.hpp>
 #include <core/data/Node.hpp>
 #include <core/data/Patient.hpp>
 #include <core/data/Point.hpp>
@@ -2186,6 +2187,107 @@ void SessionTest::histogramTest()
         CPPUNIT_ASSERT_DOUBLES_EQUAL(binsWidth, histogram->getBinsWidth(), FLOAT_EPSILON);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(maxValue, histogram->getMaxValue(), FLOAT_EPSILON);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(minValue, histogram->getMinValue(), FLOAT_EPSILON);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::landmarksTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "landmarksTest.zip";
+
+    // Test vector
+    const std::string name(UUID::generateUUID());
+    const std::array<float, 4> color = {
+        11.111F,
+        22.222F,
+        33.333F,
+        44.444F
+    };
+
+    const float size                          = 55.555F;
+    const sight::data::Landmarks::Shape shape = sight::data::Landmarks::Shape::CUBE;
+    const bool visibility                     = false;
+
+    const std::array<const std::array<double, 3>, 3> points = {
+        {
+            {0.0, 0.0, 0.0},
+            {1.1, 2.2, 3.3},
+            {4.4, 5.5, 6.6}
+        }
+    };
+
+    // Test serialization
+    {
+        // Create histogram
+        auto landmarks = data::Landmarks::New();
+
+        landmarks->addGroup(
+            name,
+            color,
+            size,
+            shape,
+            visibility
+        );
+
+        for(const auto& point : points)
+        {
+            landmarks->addPoint(name, point);
+        }
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(landmarks);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test values
+        const auto& landmarks = data::Landmarks::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(landmarks);
+
+        // Test name
+        CPPUNIT_ASSERT_NO_THROW(landmarks->getGroup(name));
+        const auto& group = landmarks->getGroup(name);
+
+        // Test color
+        for(size_t i = 0, end = color.size() ; i < end ; ++i)
+        {
+            CPPUNIT_ASSERT_DOUBLES_EQUAL(color[i], group.m_color[i], FLOAT_EPSILON);
+        }
+
+        // Test size
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(size, group.m_size, FLOAT_EPSILON);
+
+        // Test shape
+        CPPUNIT_ASSERT_EQUAL(shape, group.m_shape);
+
+        // Test visibility
+        CPPUNIT_ASSERT_EQUAL(visibility, group.m_visibility);
+
+        // Test points
+        for(size_t i = 0, end = points.size() ; i < end ; ++i)
+        {
+            for(size_t j = 0 ; j < 3 ; ++j)
+            {
+                CPPUNIT_ASSERT_DOUBLES_EQUAL(points[i][j], group.m_points[i][j], DOUBLE_EPSILON);
+            }
+        }
     }
 }
 
