@@ -35,6 +35,7 @@
 #include <core/data/Equipment.hpp>
 #include <core/data/Float.hpp>
 #include <core/data/Graph.hpp>
+#include <core/data/Histogram.hpp>
 #include <core/data/Image.hpp>
 #include <core/data/Integer.hpp>
 #include <core/data/iterator/MeshIterators.hpp>
@@ -2121,6 +2122,70 @@ void SessionTest::graphTest()
             CPPUNIT_ASSERT(downObject);
             CPPUNIT_ASSERT_EQUAL(downString, downObject->getValue());
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::histogramTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "histogramTest.zip";
+
+    // Test vector
+    std::vector<long> values = {
+        111111,
+        222222,
+        333333
+    };
+
+    const float binsWidth = 555555.5F;
+    const float maxValue  = 444444.4F;
+    const float minValue  = 000000.0F;
+
+    // Test serialization
+    {
+        // Create histogram
+        auto histogram = data::Histogram::New();
+        histogram->setValues(values);
+        histogram->setBinsWidth(binsWidth);
+        histogram->setMaxValue(maxValue);
+        histogram->setMinValue(minValue);
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(histogram);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test values
+        const auto& histogram = data::Histogram::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(histogram);
+
+        const auto& histogramValues = histogram->getValues();
+        for(size_t index = 0, end = values.size() ; index < end ; ++index)
+        {
+            CPPUNIT_ASSERT_EQUAL(values[index], histogramValues[index]);
+        }
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(binsWidth, histogram->getBinsWidth(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(maxValue, histogram->getMaxValue(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(minValue, histogram->getMinValue(), FLOAT_EPSILON);
     }
 }
 

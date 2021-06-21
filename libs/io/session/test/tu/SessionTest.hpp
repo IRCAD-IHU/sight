@@ -60,6 +60,7 @@ public:
     CPPUNIT_TEST(portTest);
     CPPUNIT_TEST(nodeTest);
     CPPUNIT_TEST(graphTest);
+    CPPUNIT_TEST(histogramTest);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -94,6 +95,7 @@ public:
     void portTest();
     void nodeTest();
     void graphTest();
+    void histogramTest();
 };
 
 } // namespace ut
