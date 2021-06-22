@@ -63,6 +63,7 @@ public:
     CPPUNIT_TEST(histogramTest);
     CPPUNIT_TEST(landmarksTest);
     CPPUNIT_TEST(lineTest);
+    CPPUNIT_TEST(listTest);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -100,6 +101,7 @@ public:
     void histogramTest();
     void landmarksTest();
     void lineTest();
+    void listTest();
 };
 
 } // namespace ut

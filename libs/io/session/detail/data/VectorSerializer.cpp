@@ -46,7 +46,7 @@ void VectorSerializer::serialize(
     int index = 0;
     for(const auto& child : vector->getContainer())
     {
-        children[std::to_string(index++)] = child;
+        children[sight::data::Vector::classname() + std::to_string(index++)] = child;
     }
 }
 

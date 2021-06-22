@@ -52,7 +52,7 @@ sight::data::Object::sptr VectorDeserializer::deserialize(
     std::vector<sight::data::Object::sptr> container;
     for(std::size_t index = 0, end = children.size() ; index < end ; ++index)
     {
-        const auto& child = children.at(std::to_string(index));
+        const auto& child = children.at(sight::data::Vector::classname() + std::to_string(index));
         container.push_back(child);
     }
 

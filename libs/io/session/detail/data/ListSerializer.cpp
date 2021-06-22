@@ -19,9 +19,9 @@
  *
  ***********************************************************************/
 
-#include "PointListSerializer.hpp"
+#include "ListSerializer.hpp"
 
-#include <data/PointList.hpp>
+#include <data/List.hpp>
 
 namespace sight::io::session
 {
@@ -30,7 +30,7 @@ namespace detail::data
 {
 
 /// Serialization function
-void PointListSerializer::serialize(
+void ListSerializer::serialize(
     const zip::ArchiveWriter::sptr&,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
@@ -38,16 +38,15 @@ void PointListSerializer::serialize(
     const core::crypto::secure_string&
 ) const
 {
-    const auto& pointList = safeCast<sight::data::PointList>(object);
+    const auto& list = safeCast<sight::data::List>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    writeVersion<sight::data::PointList>(tree, 1);
+    writeVersion<sight::data::List>(tree, 1);
 
-    // Add points to children list
     int index = 0;
-    for(const auto& point : pointList->getPoints())
+    for(const auto& child : list->getContainer())
     {
-        children[sight::data::Point::classname() + std::to_string(index++)] = point;
+        children[sight::data::List::classname() + std::to_string(index++)] = child;
     }
 }
 

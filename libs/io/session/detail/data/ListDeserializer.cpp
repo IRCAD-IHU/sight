@@ -19,12 +19,11 @@
  *
  ***********************************************************************/
 
-#include "PointListDeserializer.hpp"
+#include "ListDeserializer.hpp"
 
 #include <core/exceptionmacros.hpp>
 
-#include <data/Point.hpp>
-#include <data/PointList.hpp>
+#include <data/List.hpp>
 
 namespace sight::io::session
 {
@@ -34,7 +33,7 @@ namespace detail::data
 
 //------------------------------------------------------------------------------
 
-sight::data::Object::sptr PointListDeserializer::deserialize(
+sight::data::Object::sptr ListDeserializer::deserialize(
     const zip::ArchiveReader::sptr&,
     const boost::property_tree::ptree& tree,
     const std::map<std::string, sight::data::Object::sptr>& children,
@@ -43,25 +42,23 @@ sight::data::Object::sptr PointListDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& pointList = safeCast<sight::data::PointList>(object);
+    const auto& list = safeCast<sight::data::List>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    readVersion<sight::data::PointList>(tree, 0, 1);
+    readVersion<sight::data::List>(tree, 0, 1);
 
-    // Convert the map into a vector
+    // Convert the map into a List
     // We assume the key is the index
-    std::vector<sight::data::Point::sptr> points;
+    std::list<sight::data::Object::sptr> container;
     for(std::size_t index = 0, end = children.size() ; index < end ; ++index)
     {
-        const auto& child = children.at(sight::data::Point::classname() + std::to_string(index));
-        const auto& point = sight::data::Point::dynamicCast(child);
-
-        points.push_back(point);
+        const auto& child = children.at(sight::data::List::classname() + std::to_string(index));
+        container.push_back(child);
     }
 
-    pointList->setPoints(points);
+    list->setContainer(container);
 
-    return pointList;
+    return list;
 }
 
 } // detail::data

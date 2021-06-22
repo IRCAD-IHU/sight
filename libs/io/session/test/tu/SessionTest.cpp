@@ -42,6 +42,7 @@
 #include <core/data/iterator/MeshIterators.hxx>
 #include <core/data/Landmarks.hpp>
 #include <core/data/Line.hpp>
+#include <core/data/List.hpp>
 #include <core/data/Node.hpp>
 #include <core/data/Patient.hpp>
 #include <core/data/Point.hpp>
@@ -2356,6 +2357,82 @@ void SessionTest::lineTest()
         {
             CPPUNIT_ASSERT_DOUBLES_EQUAL(direction[i], directionCoord[i], DOUBLE_EPSILON);
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::listTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "listTest.zip";
+
+    const std::string stringValue(UUID::generateUUID());
+    const std::int64_t integerValue = 42;
+    const bool booleanValue         = true;
+    const float floatValue          = 3.141592653589793F;
+
+    // Test serialization
+    {
+        // Create vector
+        auto list       = data::List::New();
+        auto& container = list->getContainer();
+        container.push_back(data::String::New(stringValue));
+        container.push_back(data::Integer::New(integerValue));
+        container.push_back(data::Boolean::New(booleanValue));
+        container.push_back(data::Float::New(floatValue));
+        container.push_back(list);
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(list);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test value
+        const auto& list = data::List::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(list);
+
+        auto it = list->getContainer().cbegin();
+
+        const auto& stringData = data::String::dynamicCast(*it++);
+        CPPUNIT_ASSERT(stringData);
+        CPPUNIT_ASSERT_EQUAL(stringValue, stringData->getValue());
+
+        const auto& integerData = data::Integer::dynamicCast(*it++);
+        CPPUNIT_ASSERT(integerData);
+        CPPUNIT_ASSERT_EQUAL(integerValue, integerData->getValue());
+
+        const auto& booleanData = data::Boolean::dynamicCast(*it++);
+        CPPUNIT_ASSERT(booleanData);
+        CPPUNIT_ASSERT_EQUAL(booleanValue, booleanData->getValue());
+
+        const auto& floatData = data::Float::dynamicCast(*it++);
+        CPPUNIT_ASSERT(floatData);
+        CPPUNIT_ASSERT_EQUAL(floatValue, floatData->getValue());
+
+        const auto& listData = data::List::dynamicCast(*it);
+        CPPUNIT_ASSERT(listData);
+
+        auto it2                   = listData->getContainer().cbegin();
+        const auto& listStringData = data::String::dynamicCast(*it2);
+        CPPUNIT_ASSERT(listStringData);
+        CPPUNIT_ASSERT_EQUAL(stringValue, listStringData->getValue());
     }
 }
 
