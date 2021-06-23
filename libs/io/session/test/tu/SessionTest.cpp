@@ -43,6 +43,7 @@
 #include <core/data/Landmarks.hpp>
 #include <core/data/Line.hpp>
 #include <core/data/List.hpp>
+#include <core/data/Material.hpp>
 #include <core/data/Node.hpp>
 #include <core/data/Patient.hpp>
 #include <core/data/Point.hpp>
@@ -1263,11 +1264,11 @@ void SessionTest::imageTest()
 
         auto it = image->begin<data::iterator::RGB>();
 
-        for(auto& x : testVector)
+        for(const auto& x : testVector)
         {
-            for(auto& y : x)
+            for(const auto& y : x)
             {
-                for(auto& z : y)
+                for(const auto& z : y)
                 {
                     CPPUNIT_ASSERT_EQUAL(z.at(0), it->r);
                     CPPUNIT_ASSERT_EQUAL(z.at(1), it->g);
@@ -2376,7 +2377,7 @@ void SessionTest::listTest()
 
     // Test serialization
     {
-        // Create vector
+        // Create list
         auto list       = data::List::New();
         auto& container = list->getContainer();
         container.push_back(data::String::New(stringValue));
@@ -2433,6 +2434,172 @@ void SessionTest::listTest()
         const auto& listStringData = data::String::dynamicCast(*it2);
         CPPUNIT_ASSERT(listStringData);
         CPPUNIT_ASSERT_EQUAL(stringValue, listStringData->getValue());
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::materialTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "materialTest.zip";
+
+    const std::array<float, 4> ambient = {
+        1.111F,
+        2.222F,
+        3.333F,
+        4.444F
+    };
+
+    const std::array<float, 4> diffuse = {
+        5.555F,
+        6.666F,
+        7.777F,
+        8.888F
+    };
+
+    const auto diffuseTexture =
+        []
+        {
+            std::array<std::array<std::array<std::array<std::uint8_t, 3>, 4>, 5>, 6> tmp;
+            std::uint8_t index = 0;
+
+            for(auto& x : tmp)
+            {
+                for(auto& y : x)
+                {
+                    for(auto& z : y)
+                    {
+                        for(auto& component : z)
+                        {
+                            component = index++;
+                        }
+                    }
+                }
+            }
+
+            return tmp;
+        }();
+
+    const data::Material::OptionsType options               = data::Material::OptionsType::STANDARD;
+    const data::Material::ShadingType shading               = data::Material::ShadingType::PHONG;
+    const data::Material::RepresentationType representation = data::Material::RepresentationType::EDGE;
+    const data::Material::FilteringType filtering           = data::Material::FilteringType::LINEAR;
+    const data::Material::WrappingType wrapping             = data::Material::WrappingType::CLAMP;
+
+    // Test serialization
+    {
+        // Create material
+        auto material = data::Material::New();
+
+        // Set ambient color
+        auto ambientColor = data::Color::New();
+        ambientColor->setRGBA(ambient[0], ambient[1], ambient[2], ambient[3]);
+        material->setAmbient(ambientColor);
+
+        // Set diffuse color
+        auto diffuseColor = data::Color::New();
+        diffuseColor->setRGBA(diffuse[0], diffuse[1], diffuse[2], diffuse[3]);
+        material->setDiffuse(diffuseColor);
+
+        // Set diffuse texture
+        auto diffuseTextureImage     = data::Image::New();
+        const core::tools::Type TYPE = core::tools::Type::s_UINT8;
+        const data::Image::Size SIZE = {4, 5, 6};
+
+        diffuseTextureImage->resize(SIZE, TYPE, data::Image::PixelFormat::RGB);
+
+        auto it = diffuseTextureImage->begin<data::iterator::RGB>();
+
+        for(const auto& x : diffuseTexture)
+        {
+            for(const auto& y : x)
+            {
+                for(const auto& z : y)
+                {
+                    it->r = z.at(0);
+                    it->g = z.at(1);
+                    it->b = z.at(2);
+                    ++it;
+                }
+            }
+        }
+
+        material->setDiffuseTexture(diffuseTextureImage);
+
+        material->setShadingMode(shading);
+        material->setRepresentationMode(representation);
+        material->setOptionsMode(options);
+        material->setDiffuseTextureFiltering(filtering);
+        material->setDiffuseTextureWrapping(wrapping);
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(material);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test value
+        const auto& material = data::Material::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(material);
+
+        // Test ambient
+        const auto& ambientColor = data::Color::dynamicCast(material->ambient());
+        CPPUNIT_ASSERT(ambientColor);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(ambient[0], ambientColor->red(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(ambient[1], ambientColor->green(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(ambient[2], ambientColor->blue(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(ambient[3], ambientColor->alpha(), FLOAT_EPSILON);
+
+        // Test diffuse
+        const auto& diffuseColor = data::Color::dynamicCast(material->diffuse());
+        CPPUNIT_ASSERT(diffuseColor);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(diffuse[0], diffuseColor->red(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(diffuse[1], diffuseColor->green(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(diffuse[2], diffuseColor->blue(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(diffuse[3], diffuseColor->alpha(), FLOAT_EPSILON);
+
+        // Test diffuse texture
+        const auto& diffuseTextureImage = data::Image::dynamicCast(material->getDiffuseTexture());
+        CPPUNIT_ASSERT(diffuseTextureImage);
+
+        auto it = diffuseTextureImage->begin<data::iterator::RGB>();
+
+        for(const auto& x : diffuseTexture)
+        {
+            for(const auto& y : x)
+            {
+                for(const auto& z : y)
+                {
+                    CPPUNIT_ASSERT_EQUAL(z.at(0), it->r);
+                    CPPUNIT_ASSERT_EQUAL(z.at(1), it->g);
+                    CPPUNIT_ASSERT_EQUAL(z.at(2), it->b);
+                    ++it;
+                }
+            }
+        }
+
+        // Test other attributes
+        CPPUNIT_ASSERT_EQUAL(shading, material->getShadingMode());
+        CPPUNIT_ASSERT_EQUAL(representation, material->getRepresentationMode());
+        CPPUNIT_ASSERT_EQUAL(options, material->getOptionsMode());
+        CPPUNIT_ASSERT_EQUAL(filtering, material->getDiffuseTextureFiltering());
+        CPPUNIT_ASSERT_EQUAL(wrapping, material->getDiffuseTextureWrapping());
     }
 }
 

@@ -64,6 +64,7 @@ public:
     CPPUNIT_TEST(landmarksTest);
     CPPUNIT_TEST(lineTest);
     CPPUNIT_TEST(listTest);
+    CPPUNIT_TEST(materialTest);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -102,6 +103,7 @@ public:
     void landmarksTest();
     void lineTest();
     void listTest();
+    void materialTest();
 };
 
 } // namespace ut

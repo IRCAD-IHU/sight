@@ -37,6 +37,7 @@
 #include "data/LandmarksSerializer.hpp"
 #include "data/LineSerializer.hpp"
 #include "data/ListSerializer.hpp"
+#include "data/MaterialSerializer.hpp"
 #include "data/MeshSerializer.hpp"
 #include "data/NodeSerializer.hpp"
 #include "data/PatientSerializer.hpp"
@@ -66,6 +67,7 @@
 #include <data/Landmarks.hpp>
 #include <data/Line.hpp>
 #include <data/List.hpp>
+#include <data/Material.hpp>
 #include <data/Mesh.hpp>
 #include <data/mt/locked_ptr.hpp>
 #include <data/Node.hpp>
@@ -119,7 +121,8 @@ static const std::unordered_map<std::string, std::function<data::IDataSerializer
     {sight::data::Histogram::classname(), &std::make_unique<data::HistogramSerializer>},
     {sight::data::Landmarks::classname(), &std::make_unique<data::LandmarksSerializer>},
     {sight::data::Line::classname(), &std::make_unique<data::LineSerializer>},
-    {sight::data::List::classname(), &std::make_unique<data::ListSerializer>}
+    {sight::data::List::classname(), &std::make_unique<data::ListSerializer>},
+    {sight::data::Material::classname(), &std::make_unique<data::MaterialSerializer>}
 };
 
 // Return a writer from a data object class name
