@@ -42,6 +42,7 @@
 #include "data/MeshDeserializer.hpp"
 #include "data/NodeDeserializer.hpp"
 #include "data/PatientDeserializer.hpp"
+#include "data/PlaneDeserializer.hpp"
 #include "data/PointDeserializer.hpp"
 #include "data/PointListDeserializer.hpp"
 #include "data/PortDeserializer.hpp"
@@ -74,6 +75,7 @@
 #include <data/mt/locked_ptr.hpp>
 #include <data/Node.hpp>
 #include <data/Patient.hpp>
+#include <data/Plane.hpp>
 #include <data/Point.hpp>
 #include <data/PointList.hpp>
 #include <data/Port.hpp>
@@ -127,7 +129,8 @@ static const std::unordered_map<std::string, std::function<data::IDataDeserializ
     {sight::data::Line::classname(), &std::make_unique<data::LineDeserializer>},
     {sight::data::List::classname(), &std::make_unique<data::ListDeserializer>},
     {sight::data::Material::classname(), &std::make_unique<data::MaterialDeserializer>},
-    {sight::data::Matrix4::classname(), &std::make_unique<data::Matrix4Deserializer>}
+    {sight::data::Matrix4::classname(), &std::make_unique<data::Matrix4Deserializer>},
+    {sight::data::Plane::classname(), &std::make_unique<data::PlaneDeserializer>}
 };
 
 // Return a writer from a data object class name

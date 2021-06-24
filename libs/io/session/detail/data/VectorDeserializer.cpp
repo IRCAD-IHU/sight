@@ -49,14 +49,17 @@ sight::data::Object::sptr VectorDeserializer::deserialize(
 
     // Convert the map into a vector
     // We assume the key is the index
-    std::vector<sight::data::Object::sptr> container;
     for(std::size_t index = 0, end = children.size() ; index < end ; ++index)
     {
-        const auto& child = children.at(sight::data::Vector::classname() + std::to_string(index));
-        container.push_back(child);
-    }
+        const auto& it = children.find(sight::data::Object::classname() + std::to_string(index));
 
-    vector->setContainer(container);
+        if(it == children.cend())
+        {
+            break;
+        }
+
+        vector->getContainer().push_back(it->second);
+    }
 
     return vector;
 }

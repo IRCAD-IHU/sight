@@ -47,6 +47,7 @@
 #include <core/data/Matrix4.hpp>
 #include <core/data/Node.hpp>
 #include <core/data/Patient.hpp>
+#include <core/data/Plane.hpp>
 #include <core/data/Point.hpp>
 #include <core/data/PointList.hpp>
 #include <core/data/Port.hpp>
@@ -2676,6 +2677,92 @@ void SessionTest::matrix4Test()
         {
             CPPUNIT_ASSERT_DOUBLES_EQUAL(fieldCoeffs[index], fieldMatrixCoeffs[index], FLOAT_EPSILON);
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::planeTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "planeTest.zip";
+
+    const std::array<double, 3> coordinates1 = {
+        0.111111111111,
+        0.222222222222,
+        0.333333333333
+    };
+
+    const std::array<double, 3> coordinates2 = {
+        0.444444444444,
+        0.555555555555,
+        0.666666666666
+    };
+
+    const std::array<double, 3> coordinates3 = {
+        0.777777777777,
+        0.888888888888,
+        0.999999999999
+    };
+
+    // Test serialization
+    {
+        // Create plane
+        auto plane   = data::Plane::New();
+        auto& points = plane->getPoints();
+
+        auto point1 = data::Point::New();
+        point1->setCoord(coordinates1);
+        points[0] = point1;
+
+        auto point2 = data::Point::New();
+        point2->setCoord(coordinates2);
+        points[1] = point2;
+
+        auto point3 = data::Point::New();
+        point3->setCoord(coordinates3);
+        points[2] = point3;
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(plane);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test value
+        const auto& plane = data::Plane::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(plane);
+
+        const auto& points  = plane->getPoints();
+        const auto& coords1 = points[0]->getCoord();
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates1[0], coords1[0], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates1[1], coords1[1], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates1[2], coords1[2], DOUBLE_EPSILON);
+
+        const auto& coords2 = points[1]->getCoord();
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates2[0], coords2[0], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates2[1], coords2[1], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates2[2], coords2[2], DOUBLE_EPSILON);
+
+        const auto& coords3 = points[2]->getCoord();
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[0], coords3[0], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[1], coords3[1], DOUBLE_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(coordinates3[2], coords3[2], DOUBLE_EPSILON);
     }
 }
 

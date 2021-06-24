@@ -19,12 +19,11 @@
  *
  ***********************************************************************/
 
-#include "PointListDeserializer.hpp"
+#include "PlaneDeserializer.hpp"
 
 #include <core/exceptionmacros.hpp>
 
-#include <data/Point.hpp>
-#include <data/PointList.hpp>
+#include <data/Plane.hpp>
 
 namespace sight::io::session
 {
@@ -34,7 +33,7 @@ namespace detail::data
 
 //------------------------------------------------------------------------------
 
-sight::data::Object::sptr PointListDeserializer::deserialize(
+sight::data::Object::sptr PlaneDeserializer::deserialize(
     const zip::ArchiveReader::sptr&,
     const boost::property_tree::ptree& tree,
     const std::map<std::string, sight::data::Object::sptr>& children,
@@ -43,14 +42,14 @@ sight::data::Object::sptr PointListDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& pointList = safeCast<sight::data::PointList>(object);
+    const auto& plane = safeCast<sight::data::Plane>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    readVersion<sight::data::PointList>(tree, 0, 1);
+    readVersion<sight::data::Plane>(tree, 0, 1);
 
-    // Convert the map into a vector
-    // We assume the key is the index
-    for(std::size_t index = 0, end = children.size() ; index < end ; ++index)
+    plane->setIsIntersection(tree.get<bool>("IsIntersection"));
+
+    for(size_t index = 0, end = children.size() ; index < end ; ++index)
     {
         const auto& it = children.find(sight::data::Point::classname() + std::to_string(index));
 
@@ -59,10 +58,10 @@ sight::data::Object::sptr PointListDeserializer::deserialize(
             break;
         }
 
-        pointList->pushBack(safeCast<sight::data::Point>(it->second));
+        plane->getPoints()[index] = safeCast<sight::data::Point>(it->second);
     }
 
-    return pointList;
+    return plane;
 }
 
 } // detail::data
