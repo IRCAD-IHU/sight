@@ -65,6 +65,7 @@ public:
     CPPUNIT_TEST(lineTest);
     CPPUNIT_TEST(listTest);
     CPPUNIT_TEST(materialTest);
+    CPPUNIT_TEST(matrix4Test);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -104,6 +105,7 @@ public:
     void lineTest();
     void listTest();
     void materialTest();
+    void matrix4Test();
 };
 
 } // namespace ut

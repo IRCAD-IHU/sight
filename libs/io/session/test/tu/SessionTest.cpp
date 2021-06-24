@@ -44,6 +44,7 @@
 #include <core/data/Line.hpp>
 #include <core/data/List.hpp>
 #include <core/data/Material.hpp>
+#include <core/data/Matrix4.hpp>
 #include <core/data/Node.hpp>
 #include <core/data/Patient.hpp>
 #include <core/data/Point.hpp>
@@ -244,12 +245,12 @@ void SessionTest::floatTest()
         // Test value
         const auto& piData = data::Float::dynamicCast(sessionReader->getObject());
         CPPUNIT_ASSERT(piData);
-        CPPUNIT_ASSERT_EQUAL(pi, piData->getValue());
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(pi, piData->getValue(), FLOAT_EPSILON);
 
         // Test field
         const auto& fieldData = data::Float::dynamicCast(piData->getField(fieldName));
         CPPUNIT_ASSERT(fieldData);
-        CPPUNIT_ASSERT_EQUAL(planck, fieldData->getValue());
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(planck, fieldData->getValue(), FLOAT_EPSILON);
     }
 }
 
@@ -2600,6 +2601,81 @@ void SessionTest::materialTest()
         CPPUNIT_ASSERT_EQUAL(options, material->getOptionsMode());
         CPPUNIT_ASSERT_EQUAL(filtering, material->getDiffuseTextureFiltering());
         CPPUNIT_ASSERT_EQUAL(wrapping, material->getDiffuseTextureWrapping());
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::matrix4Test()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "matrix4Test.zip";
+
+    const std::array<double, 16> coeffs = {
+        01.10, 02.20, 03.30, 04.40,
+        05.50, 06.60, 07.70, 08.80,
+        09.90, 10.10, 11.11, 12.12,
+        13.13, 14.14, 15.15, 16.16
+    };
+
+    const std::array<double, 16> fieldCoeffs = {
+        17.17, 18.18, 19.19, 20.20,
+        21.21, 22.22, 23.23, 24.24,
+        25.25, 26.26, 27.27, 28.28,
+        29.29, 30.30, 31.31, 32.32
+    };
+
+    // Test serialization
+    {
+        // Create the data::Matrix4
+        auto matrix = data::Matrix4::New();
+        matrix->setCoefficients(coeffs);
+
+        // Add a field
+        auto fieldMatrix = data::Matrix4::New();
+        fieldMatrix->setCoefficients(fieldCoeffs);
+        matrix->setField("fieldMatrix", fieldMatrix);
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session
+        sessionWriter->setObject(matrix);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test value
+        const auto& matrix = data::Matrix4::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(matrix);
+
+        const auto& matrixCoefficients = matrix->getCoefficients();
+        for(size_t index = 0, end = matrixCoefficients.size() ; index < end ; ++index)
+        {
+            CPPUNIT_ASSERT_DOUBLES_EQUAL(coeffs[index], matrixCoefficients[index], FLOAT_EPSILON);
+        }
+
+        // Test field
+        const auto& fieldMatrix = data::Matrix4::dynamicCast(matrix->getField("fieldMatrix"));
+        CPPUNIT_ASSERT(fieldMatrix);
+
+        const auto& fieldMatrixCoeffs = fieldMatrix->getCoefficients();
+        for(size_t index = 0, end = fieldMatrixCoeffs.size() ; index < end ; ++index)
+        {
+            CPPUNIT_ASSERT_DOUBLES_EQUAL(fieldCoeffs[index], fieldMatrixCoeffs[index], FLOAT_EPSILON);
+        }
     }
 }
 
