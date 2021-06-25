@@ -19,11 +19,9 @@
  *
  ***********************************************************************/
 
-#include "ListDeserializer.hpp"
+#include "PlaneListSerializer.hpp"
 
-#include <core/exceptionmacros.hpp>
-
-#include <data/List.hpp>
+#include <data/PlaneList.hpp>
 
 namespace sight::io::session
 {
@@ -31,37 +29,26 @@ namespace sight::io::session
 namespace detail::data
 {
 
-//------------------------------------------------------------------------------
-
-sight::data::Object::sptr ListDeserializer::deserialize(
-    const zip::ArchiveReader::sptr&,
-    const boost::property_tree::ptree& tree,
-    const std::map<std::string, sight::data::Object::sptr>& children,
-    const sight::data::Object::sptr& object,
+/// Serialization function
+void PlaneListSerializer::serialize(
+    const zip::ArchiveWriter::sptr&,
+    boost::property_tree::ptree& tree,
+    const sight::data::Object::csptr& object,
+    std::map<std::string, sight::data::Object::csptr>& children,
     const core::crypto::secure_string&
 ) const
 {
-    // Create or reuse the object
-    const auto& list = safeCast<sight::data::List>(object);
+    const auto& PlaneList = safeCast<sight::data::PlaneList>(object);
 
-    // Check version number. Not mandatory, but could help for future release
-    readVersion<sight::data::List>(tree, 0, 1);
+    // Add a version number. Not mandatory, but could help for future release
+    writeVersion<sight::data::PlaneList>(tree, 1);
 
-    // Deserialize list
-    auto& objects = list->getContainer();
-    for(std::size_t index = 0, end = children.size() ; index < end ; ++index)
+    // Add points to children list
+    int index = 0;
+    for(const auto& plane : PlaneList->getPlanes())
     {
-        const auto& it = children.find(sight::data::Object::classname() + std::to_string(index));
-
-        if(it == children.cend())
-        {
-            break;
-        }
-
-        objects.push_back(it->second);
+        children[sight::data::Plane::classname() + std::to_string(index++)] = plane;
     }
-
-    return list;
 }
 
 } // detail::data

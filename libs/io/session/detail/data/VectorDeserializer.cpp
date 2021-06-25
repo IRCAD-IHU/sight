@@ -47,8 +47,8 @@ sight::data::Object::sptr VectorDeserializer::deserialize(
     // Check version number. Not mandatory, but could help for future release
     readVersion<sight::data::Vector>(tree, 0, 1);
 
-    // Convert the map into a vector
-    // We assume the key is the index
+    // Deserialize vector
+    auto& objects = vector->getContainer();
     for(std::size_t index = 0, end = children.size() ; index < end ; ++index)
     {
         const auto& it = children.find(sight::data::Object::classname() + std::to_string(index));
@@ -58,7 +58,7 @@ sight::data::Object::sptr VectorDeserializer::deserialize(
             break;
         }
 
-        vector->getContainer().push_back(it->second);
+        objects.push_back(it->second);
     }
 
     return vector;

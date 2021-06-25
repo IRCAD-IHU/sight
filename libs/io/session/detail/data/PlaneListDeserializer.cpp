@@ -19,12 +19,12 @@
  *
  ***********************************************************************/
 
-#include "PointListDeserializer.hpp"
+#include "PlaneListDeserializer.hpp"
 
 #include <core/exceptionmacros.hpp>
 
+#include <data/PlaneList.hpp>
 #include <data/Point.hpp>
-#include <data/PointList.hpp>
 
 namespace sight::io::session
 {
@@ -34,7 +34,7 @@ namespace detail::data
 
 //------------------------------------------------------------------------------
 
-sight::data::Object::sptr PointListDeserializer::deserialize(
+sight::data::Object::sptr PlaneListDeserializer::deserialize(
     const zip::ArchiveReader::sptr&,
     const boost::property_tree::ptree& tree,
     const std::map<std::string, sight::data::Object::sptr>& children,
@@ -43,25 +43,26 @@ sight::data::Object::sptr PointListDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& pointList = safeCast<sight::data::PointList>(object);
+    const auto& planeList = safeCast<sight::data::PlaneList>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    readVersion<sight::data::PointList>(tree, 0, 1);
+    readVersion<sight::data::PlaneList>(tree, 0, 1);
 
-    // Deserialize points
+    // Deserialize planes
+    auto& planes = planeList->getPlanes();
     for(std::size_t index = 0, end = children.size() ; index < end ; ++index)
     {
-        const auto& it = children.find(sight::data::Point::classname() + std::to_string(index));
+        const auto& it = children.find(sight::data::Plane::classname() + std::to_string(index));
 
         if(it == children.cend())
         {
             break;
         }
 
-        pointList->pushBack(safeCast<sight::data::Point>(it->second));
+        planes.push_back(safeCast<sight::data::Plane>(it->second));
     }
 
-    return pointList;
+    return planeList;
 }
 
 } // detail::data

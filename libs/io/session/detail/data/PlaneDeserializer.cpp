@@ -49,6 +49,7 @@ sight::data::Object::sptr PlaneDeserializer::deserialize(
 
     plane->setIsIntersection(tree.get<bool>("IsIntersection"));
 
+    auto& points = plane->getPoints();
     for(size_t index = 0, end = children.size() ; index < end ; ++index)
     {
         const auto& it = children.find(sight::data::Point::classname() + std::to_string(index));
@@ -58,7 +59,7 @@ sight::data::Object::sptr PlaneDeserializer::deserialize(
             break;
         }
 
-        plane->getPoints()[index] = safeCast<sight::data::Point>(it->second);
+        points[index] = safeCast<sight::data::Point>(it->second);
     }
 
     return plane;
