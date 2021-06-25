@@ -48,6 +48,9 @@ sight::data::Object::sptr GraphDeserializer::deserialize(
     readVersion<sight::data::Graph>(tree, 0, 1);
 
     // Deserialize node
+    // Clearing is required in case the object is reused
+    graph->getNodes().clear();
+
     for(size_t index = 0, end = children.size() ; index < end ; ++index)
     {
         const auto& nodeIt = children.find(sight::data::Node::classname() + std::to_string(index));
@@ -63,6 +66,9 @@ sight::data::Object::sptr GraphDeserializer::deserialize(
     }
 
     // Deserialize connections
+    // Clearing is required in case the object is reused
+    graph->getConnections().clear();
+
     for(size_t index = 0, end = children.size() ; index < end ; ++index)
     {
         // Deserialize edge

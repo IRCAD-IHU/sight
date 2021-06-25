@@ -49,6 +49,9 @@ sight::data::Object::sptr CalibrationInfoDeserializer::deserialize(
     readVersion<sight::data::CalibrationInfo>(tree, 0, 1);
 
     // Deserialize children
+    // Clearing is required in case the object is reused
+    calibrationInfo->resetRecords();
+
     for(std::size_t index = 0, end = children.size() ; index < end ; ++index)
     {
         // Find the image ad the associated pointList

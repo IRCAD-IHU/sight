@@ -49,6 +49,10 @@ sight::data::Object::sptr ListDeserializer::deserialize(
 
     // Deserialize list
     auto& objects = list->getContainer();
+
+    // Clearing is required in case the object is reused
+    objects.clear();
+
     for(std::size_t index = 0, end = children.size() ; index < end ; ++index)
     {
         const auto& it = children.find(sight::data::Object::classname() + std::to_string(index));

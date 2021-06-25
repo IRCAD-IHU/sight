@@ -68,6 +68,7 @@ public:
     CPPUNIT_TEST(matrix4Test);
     CPPUNIT_TEST(planeTest);
     CPPUNIT_TEST(planeListTest);
+    CPPUNIT_TEST(processObjectTest);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -110,6 +111,7 @@ public:
     void matrix4Test();
     void planeTest();
     void planeListTest();
+    void processObjectTest();
 };
 
 } // namespace ut

@@ -49,6 +49,10 @@ sight::data::Object::sptr NodeDeserializer::deserialize(
 
     node->setObject(children.at("Object"));
 
+    // Clearing is required in case the object is reused
+    node->getInputPorts().clear();
+    node->getOutputPorts().clear();
+
     for(size_t index = 0, end = children.size() ; index < end ; ++index)
     {
         const auto& inputIt  = children.find("Input" + std::to_string(index));

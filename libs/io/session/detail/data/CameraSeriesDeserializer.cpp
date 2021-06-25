@@ -54,6 +54,9 @@ sight::data::Object::sptr CameraSeriesDeserializer::deserialize(
     seriesDeserializer.deserialize(archive, tree, children, cameraSeries, password);
 
     // Deserialize children
+    // Clearing is required in case the object is reused
+    cameraSeries->clearCameras();
+
     for(size_t index = 0, end = children.size() ; index < end ; ++index)
     {
         const auto& cameraIt = children.find(sight::data::Camera::classname() + std::to_string(index));

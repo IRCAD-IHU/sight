@@ -19,9 +19,9 @@
  *
  ***********************************************************************/
 
-#include "ListSerializer.hpp"
+#include "ProcessObjectSerializer.hpp"
 
-#include <data/List.hpp>
+#include <data/ProcessObject.hpp>
 
 namespace sight::io::session
 {
@@ -30,7 +30,7 @@ namespace detail::data
 {
 
 /// Serialization function
-void ListSerializer::serialize(
+void ProcessObjectSerializer::serialize(
     const zip::ArchiveWriter::sptr&,
     boost::property_tree::ptree& tree,
     const sight::data::Object::csptr& object,
@@ -38,15 +38,21 @@ void ListSerializer::serialize(
     const core::crypto::secure_string&
 ) const
 {
-    const auto& list = safeCast<sight::data::List>(object);
+    const auto& processObject = safeCast<sight::data::ProcessObject>(object);
 
     // Add a version number. Not mandatory, but could help for future release
-    writeVersion<sight::data::List>(tree, 1);
+    writeVersion<sight::data::ProcessObject>(tree, 1);
 
-    int index = 0;
-    for(const auto& child : list->getContainer())
+    // Serialize intputs
+    for(const auto& input : processObject->getInputs())
     {
-        children[sight::data::Object::classname() + std::to_string(index++)] = child;
+        children["I" + input.first] = input.second;
+    }
+
+    // Serialize outputs
+    for(const auto& output : processObject->getOutputs())
+    {
+        children["O" + output.first] = output.second;
     }
 }
 

@@ -50,6 +50,10 @@ sight::data::Object::sptr PlaneListDeserializer::deserialize(
 
     // Deserialize planes
     auto& planes = planeList->getPlanes();
+
+    // Clearing is required in case the object is reused
+    planes.clear();
+
     for(std::size_t index = 0, end = children.size() ; index < end ; ++index)
     {
         const auto& it = children.find(sight::data::Plane::classname() + std::to_string(index));

@@ -19,12 +19,11 @@
  *
  ***********************************************************************/
 
-#include "PointListDeserializer.hpp"
+#include "ProcessObjectDeserializer.hpp"
 
 #include <core/exceptionmacros.hpp>
 
-#include <data/Point.hpp>
-#include <data/PointList.hpp>
+#include <data/ProcessObject.hpp>
 
 namespace sight::io::session
 {
@@ -34,7 +33,7 @@ namespace detail::data
 
 //------------------------------------------------------------------------------
 
-sight::data::Object::sptr PointListDeserializer::deserialize(
+sight::data::Object::sptr ProcessObjectDeserializer::deserialize(
     const zip::ArchiveReader::sptr&,
     const boost::property_tree::ptree& tree,
     const std::map<std::string, sight::data::Object::sptr>& children,
@@ -43,28 +42,34 @@ sight::data::Object::sptr PointListDeserializer::deserialize(
 ) const
 {
     // Create or reuse the object
-    const auto& pointList = safeCast<sight::data::PointList>(object);
+    const auto& processObject = safeCast<sight::data::ProcessObject>(object);
 
     // Check version number. Not mandatory, but could help for future release
-    readVersion<sight::data::PointList>(tree, 0, 1);
+    readVersion<sight::data::ProcessObject>(tree, 0, 1);
 
-    // Deserialize points
-    // Clearing is required in case the object is reused
-    pointList->getPoints().clear();
+    // Deserialize inputs / outputs
+    auto inputs = processObject->getInputs();
+    inputs.clear();
 
-    for(std::size_t index = 0, end = children.size() ; index < end ; ++index)
+    auto outputs = processObject->getOutputs();
+    outputs.clear();
+
+    for(const auto& child : children)
     {
-        const auto& it = children.find(sight::data::Point::classname() + std::to_string(index));
-
-        if(it == children.cend())
+        if(child.first[0] == 'I')
         {
-            break;
+            inputs[child.first.substr(1)] = child.second;
         }
-
-        pointList->pushBack(safeCast<sight::data::Point>(it->second));
+        else if(child.first[0] == 'O')
+        {
+            outputs[child.first.substr(1)] = child.second;
+        }
     }
 
-    return pointList;
+    processObject->setInputs(inputs);
+    processObject->setOutputs(outputs);
+
+    return processObject;
 }
 
 } // detail::data

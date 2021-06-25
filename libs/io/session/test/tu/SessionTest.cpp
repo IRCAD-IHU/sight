@@ -52,6 +52,7 @@
 #include <core/data/Point.hpp>
 #include <core/data/PointList.hpp>
 #include <core/data/Port.hpp>
+#include <core/data/ProcessObject.hpp>
 #include <core/data/Series.hpp>
 #include <core/data/String.hpp>
 #include <core/data/Study.hpp>
@@ -1318,6 +1319,10 @@ void SessionTest::vectorTest()
         sessionWriter->write();
 
         CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+
+        // This is needed since we push the vector itself in the container
+        // Otherwise the vector is never destroyed
+        container.clear();
     }
 
     // Test deserialization
@@ -1331,23 +1336,25 @@ void SessionTest::vectorTest()
         const auto& vector = data::Vector::dynamicCast(sessionReader->getObject());
         CPPUNIT_ASSERT(vector);
 
-        const auto& stringData = data::String::dynamicCast((*vector)[0]);
+        const auto& container = vector->getContainer();
+
+        const auto& stringData = data::String::dynamicCast(container[0]);
         CPPUNIT_ASSERT(stringData);
         CPPUNIT_ASSERT_EQUAL(expectedString, stringData->getValue());
 
-        const auto& integerData = data::Integer::dynamicCast((*vector)[1]);
+        const auto& integerData = data::Integer::dynamicCast(container[1]);
         CPPUNIT_ASSERT(integerData);
         CPPUNIT_ASSERT_EQUAL(expectedInteger, integerData->getValue());
 
-        const auto& booleanData = data::Boolean::dynamicCast((*vector)[2]);
+        const auto& booleanData = data::Boolean::dynamicCast(container[2]);
         CPPUNIT_ASSERT(booleanData);
         CPPUNIT_ASSERT_EQUAL(expectedBoolean, booleanData->getValue());
 
-        const auto& floatData = data::Float::dynamicCast((*vector)[3]);
+        const auto& floatData = data::Float::dynamicCast(container[3]);
         CPPUNIT_ASSERT(floatData);
         CPPUNIT_ASSERT_EQUAL(expectedFloat, floatData->getValue());
 
-        const auto& vectorData = data::Vector::dynamicCast((*vector)[4]);
+        const auto& vectorData = data::Vector::dynamicCast(container[4]);
         CPPUNIT_ASSERT(vectorData);
         const auto& vectorStringData = data::String::dynamicCast((*vectorData)[0]);
         CPPUNIT_ASSERT(vectorStringData);
@@ -1967,7 +1974,7 @@ void SessionTest::nodeTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "nodeTest.zip";
 
-    // Test vector
+    // Test data
     const std::string expectedString(UUID::generateUUID());
 
     std::array<std::array<std::string, 2>, 3> expectedInputs = {
@@ -2399,6 +2406,10 @@ void SessionTest::listTest()
         sessionWriter->write();
 
         CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+
+        // This is needed since we push the list itself in the container
+        // Otherwise the list is never destroyed
+        container.clear();
     }
 
     // Test deserialization
@@ -2867,6 +2878,71 @@ void SessionTest::planeListTest()
                 CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint[2], pointCoords[2], DOUBLE_EPSILON);
             }
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::processObjectTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "processObjectTest.zip";
+
+    // Test data
+    const std::string expectedString(UUID::generateUUID());
+    const std::int64_t expectedInteger = 42;
+    const bool expectedBoolean         = true;
+    const float expectedFloat          = 3.141592653589793F;
+
+    // Test serialization
+    {
+        // Create processObject
+        auto processObject = data::ProcessObject::New();
+        processObject->setInputValue("String", data::String::New(expectedString));
+        processObject->setInputValue("Integer", data::Integer::New(expectedInteger));
+        processObject->setOutputValue("Boolean", data::Boolean::New(expectedBoolean));
+        processObject->setOutputValue("Float", data::Float::New(expectedFloat));
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(processObject);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test values
+        const auto& processObject = data::ProcessObject::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(processObject);
+
+        const auto& stringObject = processObject->getInput<data::String>("String");
+        CPPUNIT_ASSERT(stringObject);
+        CPPUNIT_ASSERT_EQUAL(expectedString, stringObject->getValue());
+
+        const auto& integerObject = processObject->getInput<data::Integer>("Integer");
+        CPPUNIT_ASSERT(integerObject);
+        CPPUNIT_ASSERT_EQUAL(expectedInteger, integerObject->getValue());
+
+        const auto& booleanObject = processObject->getOutput<data::Boolean>("Boolean");
+        CPPUNIT_ASSERT(booleanObject);
+        CPPUNIT_ASSERT_EQUAL(expectedBoolean, booleanObject->getValue());
+
+        const auto& floatObject = processObject->getOutput<data::Float>("Float");
+        CPPUNIT_ASSERT(floatObject);
+        CPPUNIT_ASSERT_EQUAL(expectedFloat, floatObject->getValue());
     }
 }
 
