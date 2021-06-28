@@ -59,6 +59,7 @@
 #include <core/data/Reconstruction.hpp>
 #include <core/data/Series.hpp>
 #include <core/data/String.hpp>
+#include <core/data/StructureTraits.hpp>
 #include <core/data/Study.hpp>
 #include <core/data/Vector.hpp>
 #include <core/tools/System.hpp>
@@ -3105,6 +3106,100 @@ void SessionTest::reconstructionTest()
             CPPUNIT_ASSERT_DOUBLES_EQUAL(originalMeshIt->point->y, meshIt->point->y, FLOAT_EPSILON);
             CPPUNIT_ASSERT_DOUBLES_EQUAL(originalMeshIt->point->z, meshIt->point->z, FLOAT_EPSILON);
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::structureTraitsTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "structureTraitsTest.zip";
+
+    // Test data
+    const std::string expectedType(UUID::generateUUID());
+    const data::StructureTraits::StructureClass expectedClass = data::StructureTraits::StructureClass::NO_CONSTRAINT;
+    const std::string expectedNativeExp(UUID::generateUUID());
+    const std::string expectedNativeGeometricExp(UUID::generateUUID());
+    const std::string expectedAttachmentType(UUID::generateUUID());
+    const std::string expectedAnatomicRegion(UUID::generateUUID());
+    const std::string expectedPropertyCategory(UUID::generateUUID());
+    const std::string expectedPropertyType(UUID::generateUUID());
+
+    std::array<float, 4> rgba = {11.1F, 22.2F, 33.3F, 44.4F};
+
+    // Test serialization
+    {
+        // Create reconstruction
+        auto structure = data::StructureTraits::New();
+
+        structure->setType(expectedType);
+        structure->setClass(expectedClass);
+        structure->setNativeExp(expectedNativeExp);
+        structure->setNativeGeometricExp(expectedNativeGeometricExp);
+        structure->setAttachmentType(expectedAttachmentType);
+        structure->setAnatomicRegion(expectedAnatomicRegion);
+        structure->setPropertyCategory(expectedPropertyCategory);
+        structure->setPropertyType(expectedPropertyType);
+
+        // Categories
+        auto& categories = structure->getCategories();
+        categories.clear();
+        categories.push_back(data::StructureTraits::Category::BODY);
+        categories.push_back(data::StructureTraits::Category::NECK);
+        categories.push_back(data::StructureTraits::Category::HEAD);
+
+        // Color
+        auto color = data::Color::New();
+        color->setRGBA(rgba[0], rgba[1], rgba[2], rgba[3]);
+        structure->setColor(color);
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(structure);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test values
+        const auto& structure = data::StructureTraits::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(structure);
+
+        CPPUNIT_ASSERT_EQUAL(expectedType, structure->getType());
+        CPPUNIT_ASSERT_EQUAL(expectedClass, structure->getClass());
+        CPPUNIT_ASSERT_EQUAL(expectedNativeExp, structure->getNativeExp());
+        CPPUNIT_ASSERT_EQUAL(expectedNativeGeometricExp, structure->getNativeGeometricExp());
+        CPPUNIT_ASSERT_EQUAL(expectedAttachmentType, structure->getAttachmentType());
+        CPPUNIT_ASSERT_EQUAL(expectedAnatomicRegion, structure->getAnatomicRegion());
+        CPPUNIT_ASSERT_EQUAL(expectedPropertyCategory, structure->getPropertyCategory());
+        CPPUNIT_ASSERT_EQUAL(expectedPropertyType, structure->getPropertyType());
+
+        // Categories
+        const auto& categories = structure->getCategories();
+        CPPUNIT_ASSERT_EQUAL(data::StructureTraits::Category::BODY, categories[0]);
+        CPPUNIT_ASSERT_EQUAL(data::StructureTraits::Category::NECK, categories[1]);
+        CPPUNIT_ASSERT_EQUAL(data::StructureTraits::Category::HEAD, categories[2]);
+
+        // Color
+        const auto& color = structure->getColor();
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[0], color->red(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[1], color->green(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[2], color->blue(), FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[3], color->alpha(), FLOAT_EPSILON);
     }
 }
 

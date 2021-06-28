@@ -70,6 +70,7 @@ public:
     CPPUNIT_TEST(planeListTest);
     CPPUNIT_TEST(processObjectTest);
     CPPUNIT_TEST(reconstructionTest);
+    CPPUNIT_TEST(structureTraitsTest);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -114,6 +115,7 @@ public:
     void planeListTest();
     void processObjectTest();
     void reconstructionTest();
+    void structureTraitsTest();
 };
 
 } // namespace ut

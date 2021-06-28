@@ -51,6 +51,7 @@
 #include "data/ReconstructionDeserializer.hpp"
 #include "data/SeriesDeserializer.hpp"
 #include "data/StringDeserializer.hpp"
+#include "data/StructureTraitsDeserializer.hpp"
 #include "data/StudyDeserializer.hpp"
 #include "data/VectorDeserializer.hpp"
 
@@ -87,6 +88,7 @@
 #include <data/Reconstruction.hpp>
 #include <data/Series.hpp>
 #include <data/String.hpp>
+#include <data/StructureTraits.hpp>
 #include <data/Study.hpp>
 #include <data/Vector.hpp>
 
@@ -139,7 +141,8 @@ static const std::unordered_map<std::string, std::function<data::IDataDeserializ
     {sight::data::Plane::classname(), &std::make_unique<data::PlaneDeserializer>},
     {sight::data::PlaneList::classname(), &std::make_unique<data::PlaneListDeserializer>},
     {sight::data::ProcessObject::classname(), &std::make_unique<data::ProcessObjectDeserializer>},
-    {sight::data::Reconstruction::classname(), &std::make_unique<data::ReconstructionDeserializer>}
+    {sight::data::Reconstruction::classname(), &std::make_unique<data::ReconstructionDeserializer>},
+    {sight::data::StructureTraits::classname(), &std::make_unique<data::StructureTraitsDeserializer>}
 };
 
 // Return a writer from a data object class name
