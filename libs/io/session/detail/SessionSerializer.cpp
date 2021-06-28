@@ -48,6 +48,7 @@
 #include "data/PointSerializer.hpp"
 #include "data/PortSerializer.hpp"
 #include "data/ProcessObjectSerializer.hpp"
+#include "data/ReconstructionSerializer.hpp"
 #include "data/SeriesSerializer.hpp"
 #include "data/StringSerializer.hpp"
 #include "data/StudySerializer.hpp"
@@ -83,6 +84,7 @@
 #include <data/PointList.hpp>
 #include <data/Port.hpp>
 #include <data/ProcessObject.hpp>
+#include <data/Reconstruction.hpp>
 #include <data/Series.hpp>
 #include <data/String.hpp>
 #include <data/Study.hpp>
@@ -134,7 +136,8 @@ static const std::unordered_map<std::string, std::function<data::IDataSerializer
     {sight::data::Matrix4::classname(), &std::make_unique<data::Matrix4Serializer>},
     {sight::data::Plane::classname(), &std::make_unique<data::PlaneSerializer>},
     {sight::data::PlaneList::classname(), &std::make_unique<data::PlaneListSerializer>},
-    {sight::data::ProcessObject::classname(), &std::make_unique<data::ProcessObjectSerializer>}
+    {sight::data::ProcessObject::classname(), &std::make_unique<data::ProcessObjectSerializer>},
+    {sight::data::Reconstruction::classname(), &std::make_unique<data::ReconstructionSerializer>}
 };
 
 // Return a writer from a data object class name
@@ -166,6 +169,12 @@ inline static void deep_serialize(
     const core::crypto::secure_string& password
 )
 {
+    // Only serialize non-null object
+    if(!object)
+    {
+        return;
+    }
+
     // Lock the object
     sight::data::mt::locked_ptr<const sight::data::Object> lock(object);
 
@@ -239,8 +248,10 @@ inline static void deep_serialize(
 
             for(const auto& field : fields)
             {
-                // Recursively serialize field object
+                // Only serialize non null child
                 boost::property_tree::ptree field_tree;
+
+                // Recursively serialize field object
                 deep_serialize(cache, archive, field_tree, field.second, password);
 
                 // Append to the fields tree

@@ -38,6 +38,8 @@
 #include <core/data/Histogram.hpp>
 #include <core/data/Image.hpp>
 #include <core/data/Integer.hpp>
+#include <core/data/iterator/ImageIterator.hpp>
+#include <core/data/iterator/ImageIterator.hxx>
 #include <core/data/iterator/MeshIterators.hpp>
 #include <core/data/iterator/MeshIterators.hxx>
 #include <core/data/Landmarks.hpp>
@@ -45,6 +47,7 @@
 #include <core/data/List.hpp>
 #include <core/data/Material.hpp>
 #include <core/data/Matrix4.hpp>
+#include <core/data/mt/locked_ptr.hpp>
 #include <core/data/Node.hpp>
 #include <core/data/Patient.hpp>
 #include <core/data/Plane.hpp>
@@ -53,6 +56,7 @@
 #include <core/data/PointList.hpp>
 #include <core/data/Port.hpp>
 #include <core/data/ProcessObject.hpp>
+#include <core/data/Reconstruction.hpp>
 #include <core/data/Series.hpp>
 #include <core/data/String.hpp>
 #include <core/data/Study.hpp>
@@ -1221,24 +1225,26 @@ void SessionTest::imageTest()
     {
         // Create the image
         auto image = data::Image::New();
-
-        const core::tools::Type TYPE = core::tools::Type::s_UINT8;
-        const data::Image::Size SIZE = {4, 5, 6};
-
-        image->resize(SIZE, TYPE, data::Image::PixelFormat::RGB);
-
-        auto it = image->begin<data::iterator::RGB>();
-
-        for(auto& x : expectedImage)
         {
-            for(auto& y : x)
+            data::mt::locked_ptr<data::Image> imageGuard(image);
+            const core::tools::Type TYPE = core::tools::Type::s_UINT8;
+            const data::Image::Size SIZE = {4, 5, 6};
+
+            image->resize(SIZE, TYPE, data::Image::PixelFormat::RGB);
+
+            auto it = image->begin<data::iterator::RGB>();
+
+            for(auto& x : expectedImage)
             {
-                for(auto& z : y)
+                for(auto& y : x)
                 {
-                    it->r = z.at(0);
-                    it->g = z.at(1);
-                    it->b = z.at(2);
-                    ++it;
+                    for(auto& z : y)
+                    {
+                        it->r = z.at(0);
+                        it->g = z.at(1);
+                        it->b = z.at(2);
+                        ++it;
+                    }
                 }
             }
         }
@@ -1566,21 +1572,23 @@ void SessionTest::calibrationInfoTest()
         {
             // Create the image
             auto image = data::Image::New();
-
-            const core::tools::Type TYPE = core::tools::Type::s_UINT8;
-            const data::Image::Size SIZE = {3, 3};
-
-            image->resize(SIZE, TYPE, data::Image::PixelFormat::RGB);
-            auto it = image->begin<data::iterator::RGB>();
-
-            for(auto& x : expectedImages[i])
             {
-                for(auto& y : x)
+                data::mt::locked_ptr<data::Image> imageGuard(image);
+                const core::tools::Type TYPE = core::tools::Type::s_UINT8;
+                const data::Image::Size SIZE = {3, 3};
+
+                image->resize(SIZE, TYPE, data::Image::PixelFormat::RGB);
+                auto it = image->begin<data::iterator::RGB>();
+
+                for(auto& x : expectedImages[i])
                 {
-                    it->r = y.at(0);
-                    it->g = y.at(1);
-                    it->b = y.at(2);
-                    ++it;
+                    for(auto& y : x)
+                    {
+                        it->r = y.at(0);
+                        it->g = y.at(1);
+                        it->b = y.at(2);
+                        ++it;
+                    }
                 }
             }
 
@@ -2519,24 +2527,26 @@ void SessionTest::materialTest()
         material->setDiffuse(diffuseColor);
 
         // Set diffuse texture
-        auto diffuseTextureImage     = data::Image::New();
-        const core::tools::Type TYPE = core::tools::Type::s_UINT8;
-        const data::Image::Size SIZE = {4, 5, 6};
-
-        diffuseTextureImage->resize(SIZE, TYPE, data::Image::PixelFormat::RGB);
-
-        auto it = diffuseTextureImage->begin<data::iterator::RGB>();
-
-        for(const auto& x : expectedDiffuseTexture)
+        auto diffuseTextureImage = data::Image::New();
         {
-            for(const auto& y : x)
+            data::mt::locked_ptr<data::Image> imageGuard(diffuseTextureImage);
+            const core::tools::Type TYPE = core::tools::Type::s_UINT8;
+            const data::Image::Size SIZE = {4, 5, 6};
+
+            diffuseTextureImage->resize(SIZE, TYPE, data::Image::PixelFormat::RGB);
+
+            auto it = diffuseTextureImage->begin<data::iterator::RGB>();
+            for(const auto& x : expectedDiffuseTexture)
             {
-                for(const auto& z : y)
+                for(const auto& y : x)
                 {
-                    it->r = z.at(0);
-                    it->g = z.at(1);
-                    it->b = z.at(2);
-                    ++it;
+                    for(const auto& z : y)
+                    {
+                        it->r = z.at(0);
+                        it->g = z.at(1);
+                        it->b = z.at(2);
+                        ++it;
+                    }
                 }
             }
         }
@@ -2943,6 +2953,158 @@ void SessionTest::processObjectTest()
         const auto& floatObject = processObject->getOutput<data::Float>("Float");
         CPPUNIT_ASSERT(floatObject);
         CPPUNIT_ASSERT_EQUAL(expectedFloat, floatObject->getValue());
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void SessionTest::reconstructionTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "reconstructionTest.zip";
+
+    // Test data
+    const bool expectedIsVisible = false;
+    const std::string expectedOrganName(UUID::generateUUID());
+    const std::string expectedStructureType(UUID::generateUUID());
+    const double expectedComputedMaskVolume = 111111.111;
+
+    const data::Material::OptionsType expectedOptions               = data::Material::OptionsType::STANDARD;
+    const data::Material::ShadingType expectedShading               = data::Material::ShadingType::PHONG;
+    const data::Material::RepresentationType expectedRepresentation = data::Material::RepresentationType::EDGE;
+    const data::Material::FilteringType expectedFiltering           = data::Material::FilteringType::LINEAR;
+    const data::Material::WrappingType expectedWrapping             = data::Material::WrappingType::CLAMP;
+
+    const std::uint8_t r = 11;
+    const std::uint8_t g = 22;
+    const std::uint8_t b = 33;
+
+    // Create a test mesh
+    const auto& originalMesh = data::Mesh::New();
+    utestData::generator::Mesh::generateTriangleQuadMesh(originalMesh);
+    geometry::data::Mesh::shakePoint(originalMesh);
+    geometry::data::Mesh::colorizeMeshPoints(originalMesh);
+    geometry::data::Mesh::colorizeMeshCells(originalMesh);
+    geometry::data::Mesh::generatePointNormals(originalMesh);
+    geometry::data::Mesh::generateCellNormals(originalMesh);
+    originalMesh->adjustAllocatedMemory();
+
+    // Test serialization
+    {
+        // Create reconstruction
+        auto reconstruction = data::Reconstruction::New();
+        reconstruction->setIsVisible(expectedIsVisible);
+        reconstruction->setOrganName(expectedOrganName);
+        reconstruction->setStructureType(expectedStructureType);
+        reconstruction->setComputedMaskVolume(expectedComputedMaskVolume);
+
+        auto material = data::Material::New();
+        material->setOptionsMode(expectedOptions);
+        material->setShadingMode(expectedShading);
+        material->setRepresentationMode(expectedRepresentation);
+        material->setDiffuseTextureFiltering(expectedFiltering);
+        material->setDiffuseTextureWrapping(expectedWrapping);
+        reconstruction->setMaterial(material);
+
+        // Image
+        auto image = data::Image::New();
+        {
+            data::mt::locked_ptr<data::Image> imageGuard(image);
+
+            image->resize({4, 5, 6}, core::tools::Type::s_UINT8, data::Image::PixelFormat::RGB);
+
+            for(auto imageIt = image->begin<data::iterator::RGB>(), imageEnd = image->end<data::iterator::RGB>() ;
+                imageIt != imageEnd ;
+                ++imageIt)
+            {
+                imageIt->r = r;
+                imageIt->g = g;
+                imageIt->b = b;
+            }
+        }
+        reconstruction->setImage(image);
+
+        // Mesh
+        auto mesh = data::Mesh::New();
+        mesh->deepCopy(originalMesh);
+        mesh->adjustAllocatedMemory();
+
+        reconstruction->setMesh(mesh);
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(reconstruction);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test values
+        const auto& reconstruction = data::Reconstruction::dynamicCast(sessionReader->getObject());
+        CPPUNIT_ASSERT(reconstruction);
+
+        CPPUNIT_ASSERT_EQUAL(expectedIsVisible, reconstruction->getIsVisible());
+        CPPUNIT_ASSERT_EQUAL(expectedOrganName, reconstruction->getOrganName());
+        CPPUNIT_ASSERT_EQUAL(expectedStructureType, reconstruction->getStructureType());
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(
+            expectedComputedMaskVolume,
+            reconstruction->getComputedMaskVolume(),
+            DOUBLE_EPSILON
+        );
+
+        // Test material
+        const auto& material = reconstruction->getMaterial();
+        CPPUNIT_ASSERT(material);
+
+        CPPUNIT_ASSERT_EQUAL(expectedOptions, material->getOptionsMode());
+        CPPUNIT_ASSERT_EQUAL(expectedShading, material->getShadingMode());
+        CPPUNIT_ASSERT_EQUAL(expectedRepresentation, material->getRepresentationMode());
+        CPPUNIT_ASSERT_EQUAL(expectedFiltering, material->getDiffuseTextureFiltering());
+        CPPUNIT_ASSERT_EQUAL(expectedWrapping, material->getDiffuseTextureWrapping());
+
+        // Test Image
+        const auto& image = reconstruction->getImage();
+        CPPUNIT_ASSERT(image);
+
+        for(auto imageIt = image->begin<data::iterator::RGB>(), imageEnd = image->end<data::iterator::RGB>() ;
+            imageIt != imageEnd ;
+            imageIt++)
+        {
+            CPPUNIT_ASSERT_EQUAL(r, imageIt->r);
+            CPPUNIT_ASSERT_EQUAL(g, imageIt->g);
+            CPPUNIT_ASSERT_EQUAL(b, imageIt->b);
+        }
+
+        // Test Mesh
+        const auto& mesh = reconstruction->getMesh();
+        CPPUNIT_ASSERT(mesh);
+
+        const data::mt::locked_ptr<data::Mesh> originalGuard(originalMesh);
+        const data::mt::locked_ptr<data::Mesh> guard(mesh);
+        for(auto originalMeshIt = originalMesh->begin<data::iterator::PointIterator>(),
+            originalMeshEnd = mesh->end<data::iterator::PointIterator>(),
+            meshIt = mesh->begin<data::iterator::PointIterator>(),
+            meshEnd = mesh->end<data::iterator::PointIterator>() ;
+            originalMeshIt != originalMeshEnd && meshIt != meshEnd ;
+            ++originalMeshIt, ++meshIt)
+        {
+            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalMeshIt->point->x, meshIt->point->x, FLOAT_EPSILON);
+            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalMeshIt->point->y, meshIt->point->y, FLOAT_EPSILON);
+            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalMeshIt->point->z, meshIt->point->z, FLOAT_EPSILON);
+        }
     }
 }
 

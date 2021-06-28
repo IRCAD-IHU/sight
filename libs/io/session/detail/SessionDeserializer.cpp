@@ -48,6 +48,7 @@
 #include "data/PointListDeserializer.hpp"
 #include "data/PortDeserializer.hpp"
 #include "data/ProcessObjectDeserializer.hpp"
+#include "data/ReconstructionDeserializer.hpp"
 #include "data/SeriesDeserializer.hpp"
 #include "data/StringDeserializer.hpp"
 #include "data/StudyDeserializer.hpp"
@@ -83,6 +84,7 @@
 #include <data/PointList.hpp>
 #include <data/Port.hpp>
 #include <data/ProcessObject.hpp>
+#include <data/Reconstruction.hpp>
 #include <data/Series.hpp>
 #include <data/String.hpp>
 #include <data/Study.hpp>
@@ -136,7 +138,8 @@ static const std::unordered_map<std::string, std::function<data::IDataDeserializ
     {sight::data::Matrix4::classname(), &std::make_unique<data::Matrix4Deserializer>},
     {sight::data::Plane::classname(), &std::make_unique<data::PlaneDeserializer>},
     {sight::data::PlaneList::classname(), &std::make_unique<data::PlaneListDeserializer>},
-    {sight::data::ProcessObject::classname(), &std::make_unique<data::ProcessObjectDeserializer>}
+    {sight::data::ProcessObject::classname(), &std::make_unique<data::ProcessObjectDeserializer>},
+    {sight::data::Reconstruction::classname(), &std::make_unique<data::ReconstructionDeserializer>}
 };
 
 // Return a writer from a data object class name
@@ -166,12 +169,26 @@ inline static sight::data::Object::sptr deepDeserialize(
     const core::crypto::secure_string& password
 )
 {
-    // First check the cache
-    const auto& treeIt     = tree.begin();
-    const auto& objectTree = treeIt->second;
-    const auto& uuid       = objectTree.get<std::string>("uuid");
-    const auto& objectIt   = cache.find(uuid);
+    const auto& treeIt = tree.begin();
 
+    // Do not deserialize empty tree
+    if(treeIt == tree.end())
+    {
+        return sight::data::Object::sptr();
+    }
+
+    const auto& objectTree = treeIt->second;
+
+    // Do not deserialize null object tree
+    if(objectTree.empty())
+    {
+        return sight::data::Object::sptr();
+    }
+
+    const auto& uuid     = objectTree.get<std::string>("uuid");
+    const auto& objectIt = cache.find(uuid);
+
+    // First check the cache
     if(objectIt != cache.cend())
     {
         return objectIt->second;
@@ -191,15 +208,15 @@ inline static sight::data::Object::sptr deepDeserialize(
         // Existing object will be overwritten
         auto object = sight::data::Object::dynamicCast(sight::data::Object::fromUUID(uuid));
 
-        // Lock for writing (it will do nothing if object is null)
-        sight::data::mt::locked_ptr<sight::data::Object> object_guard(object);
-
         if(!object)
         {
             // Create the new object so we can safely deserialize child
             object = sight::data::factory::New(classname);
             object->setUUID(uuid);
         }
+
+        // Lock for writing (it will do nothing if object is null)
+        sight::data::mt::locked_ptr<sight::data::Object> object_guard(object);
 
         // Store the object in cache for later use and to allow circular reference
         cache[uuid] = object;

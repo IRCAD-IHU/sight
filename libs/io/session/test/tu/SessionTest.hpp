@@ -69,6 +69,7 @@ public:
     CPPUNIT_TEST(planeTest);
     CPPUNIT_TEST(planeListTest);
     CPPUNIT_TEST(processObjectTest);
+    CPPUNIT_TEST(reconstructionTest);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -112,6 +113,7 @@ public:
     void planeTest();
     void planeListTest();
     void processObjectTest();
+    void reconstructionTest();
 };
 
 } // namespace ut
