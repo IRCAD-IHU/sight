@@ -39,7 +39,6 @@ public:
     CPPUNIT_TEST(integerTest);
     CPPUNIT_TEST(floatTest);
     CPPUNIT_TEST(stringTest);
-    CPPUNIT_TEST(circularTest);
     CPPUNIT_TEST(compositeTest);
     CPPUNIT_TEST(meshTest);
     CPPUNIT_TEST(equipmentTest);
@@ -71,6 +70,7 @@ public:
     CPPUNIT_TEST(processObjectTest);
     CPPUNIT_TEST(reconstructionTest);
     CPPUNIT_TEST(structureTraitsTest);
+    CPPUNIT_TEST(reconstructionTraitsTest);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -84,7 +84,6 @@ public:
     void integerTest();
     void floatTest();
     void stringTest();
-    void circularTest();
     void compositeTest();
     void meshTest();
     void equipmentTest();
@@ -116,6 +115,7 @@ public:
     void processObjectTest();
     void reconstructionTest();
     void structureTraitsTest();
+    void reconstructionTraitsTest();
 };
 
 } // namespace ut

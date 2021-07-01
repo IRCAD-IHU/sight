@@ -57,6 +57,7 @@
 #include <core/data/Port.hpp>
 #include <core/data/ProcessObject.hpp>
 #include <core/data/Reconstruction.hpp>
+#include <core/data/ReconstructionTraits.hpp>
 #include <core/data/Series.hpp>
 #include <core/data/String.hpp>
 #include <core/data/StructureTraits.hpp>
@@ -75,6 +76,7 @@
 #include <io/zip/exception/Write.hpp>
 
 #include <utestData/Data.hpp>
+#include <utestData/generator/Image.hpp>
 #include <utestData/generator/Mesh.hpp>
 
 // Registers the fixture into the 'registry'
@@ -91,6 +93,2437 @@ namespace ut
 
 // For UUID::generateUUID();
 using core::tools::UUID;
+
+//------------------------------------------------------------------------------
+
+inline static const data::Boolean::csptr& expectedBoolean(const std::size_t variant = 0)
+{
+    if(variant % 2 == 0)
+    {
+        static const data::Boolean::csptr boolean = data::Boolean::New(true);
+        return boolean;
+    }
+    else
+    {
+        static const data::Boolean::csptr boolean = data::Boolean::New(false);
+        return boolean;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Boolean::sptr newBoolean(const std::size_t variant = 0)
+{
+    const auto& boolean = data::Boolean::New();
+    boolean->deepCopy(expectedBoolean(variant));
+    return boolean;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testBoolean(const data::Boolean::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+    CPPUNIT_ASSERT_EQUAL(expectedBoolean(variant)->getValue(), actual->getValue());
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Integer::csptr& expectedInteger(const std::size_t variant = 0)
+{
+    static std::map<std::size_t, data::Integer::csptr> integers;
+    const auto& it = integers.find(variant);
+
+    if(it == integers.cend())
+    {
+        return integers.insert_or_assign(
+            variant,
+            data::Integer::New(1 + static_cast<std::int64_t>(variant))
+        ).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Integer::sptr newInteger(const std::size_t variant = 0)
+{
+    const auto& integer = data::Integer::New();
+    integer->deepCopy(expectedInteger(variant));
+    return integer;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testInteger(const data::Integer::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+    CPPUNIT_ASSERT_EQUAL(expectedInteger(variant)->getValue(), actual->getValue());
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Float::csptr& expectedFloat(const std::size_t variant = 0)
+{
+    static std::map<std::size_t, data::Float::csptr> floats;
+    const auto& it = floats.find(variant);
+
+    if(it == floats.cend())
+    {
+        return floats.insert_or_assign(
+            variant,
+            data::Float::New(1.0F + static_cast<float>(variant))
+        ).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Float::sptr newFloat(const std::size_t variant = 0)
+{
+    const auto& real = data::Float::New();
+    real->deepCopy(expectedFloat(variant));
+    return real;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testFloat(const data::Float::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedFloat(variant)->getValue(), actual->getValue(), FLOAT_EPSILON);
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::String::csptr& expectedString(const std::size_t variant = 0)
+{
+    static std::map<std::size_t, data::String::csptr> strings;
+    const auto& it = strings.find(variant);
+
+    if(it == strings.cend())
+    {
+        data::String::csptr string;
+
+        if(variant == 0)
+        {
+            string = data::String::New(core::crypto::encrypt(UUID::generateUUID(), "password"));
+        }
+        else
+        {
+            string = data::String::New(UUID::generateUUID());
+        }
+
+        return strings.insert_or_assign(variant, string).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::String::sptr newString(const std::size_t variant = 0)
+{
+    const auto& string = data::String::New();
+    string->deepCopy(expectedString(variant));
+    return string;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testString(const data::String::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    if(variant == 0)
+    {
+        const auto& expectedEncrypted = expectedString(variant)->getValue();
+        const auto& actualEncrypted   = actual->getValue();
+        CPPUNIT_ASSERT_EQUAL(expectedEncrypted, actualEncrypted);
+
+        const auto& expectedDecrypted = core::crypto::decrypt(expectedEncrypted, "password");
+        const auto& actualDecrypted   = core::crypto::decrypt(actualEncrypted, "password");
+        CPPUNIT_ASSERT_EQUAL(expectedDecrypted, actualDecrypted);
+    }
+    else
+    {
+        CPPUNIT_ASSERT_EQUAL(expectedString(variant)->getValue(), actual->getValue());
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Composite::csptr& expectedComposite(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp        = data::Composite::New();
+            auto& container = tmp->getContainer();
+            container[data::Boolean::classname()] = newBoolean(variant);
+            container[data::Integer::classname()] = newInteger(variant);
+            container[data::Float::classname()]   = newFloat(variant);
+            container[data::String::classname()]  = newString(variant);
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Composite::csptr> composites;
+    const auto& it = composites.find(variant);
+
+    if(it == composites.cend())
+    {
+        return composites.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Composite::sptr newComposite(const std::size_t variant = 0)
+{
+    const auto& composite = data::Composite::New();
+    composite->deepCopy(expectedComposite(variant));
+    return composite;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testComposite(const data::Composite::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& container = actual->getContainer();
+
+    testBoolean(data::Boolean::dynamicCast(container.at(data::Boolean::classname())), variant);
+    testInteger(data::Integer::dynamicCast(container.at(data::Integer::classname())), variant);
+    testFloat(data::Float::dynamicCast(container.at(data::Float::classname())), variant);
+    testString(data::String::dynamicCast(container.at(data::String::classname())), variant);
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Mesh::csptr& expectedMesh(const std::size_t variant = 0)
+{
+    const auto& generator =
+        []
+        {
+            auto tmp = data::Mesh::New();
+            utestData::generator::Mesh::generateTriangleQuadMesh(tmp);
+            geometry::data::Mesh::shakePoint(tmp);
+            geometry::data::Mesh::colorizeMeshPoints(tmp);
+            geometry::data::Mesh::colorizeMeshCells(tmp);
+            geometry::data::Mesh::generatePointNormals(tmp);
+            geometry::data::Mesh::generateCellNormals(tmp);
+            tmp->adjustAllocatedMemory();
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Mesh::csptr> meshes;
+    const auto& it = meshes.find(variant);
+
+    if(it == meshes.cend())
+    {
+        return meshes.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Mesh::sptr newMesh(const std::size_t variant = 0)
+{
+    const auto& mesh = data::Mesh::New();
+    mesh->deepCopy(expectedMesh(variant));
+    mesh->adjustAllocatedMemory();
+    return mesh;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testMesh(const data::Mesh::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    // This is need to use iterators
+    const auto& expected = expectedMesh(variant);
+
+    CPPUNIT_ASSERT_EQUAL(expected->getAttributes(), actual->getAttributes());
+    CPPUNIT_ASSERT_EQUAL(expected->getNumberOfCells(), actual->getNumberOfCells());
+    CPPUNIT_ASSERT_EQUAL(expected->getNumberOfPoints(), actual->getNumberOfPoints());
+    CPPUNIT_ASSERT_EQUAL(expected->getCellDataSize(), actual->getCellDataSize());
+    CPPUNIT_ASSERT_EQUAL(expected->getDataSizeInBytes(), actual->getDataSizeInBytes());
+
+    data::mt::locked_ptr<const data::Mesh> expectedGuard(expected);
+    data::mt::locked_ptr<const data::Mesh> actualGuard(actual);
+
+    for(auto expectedIt = expected->begin<data::iterator::PointIterator>(),
+        expectedEnd = expected->end<data::iterator::PointIterator>(),
+        actualIt = actual->begin<data::iterator::PointIterator>(),
+        actualEnd = actual->end<data::iterator::PointIterator>() ;
+        expectedIt != expectedEnd && actualIt != actualEnd ;
+        ++expectedIt, ++actualIt)
+    {
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedIt->point->x, actualIt->point->x, FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedIt->point->y, actualIt->point->y, FLOAT_EPSILON);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedIt->point->z, actualIt->point->z, FLOAT_EPSILON);
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(
+            expectedIt->normal->nx,
+            actualIt->normal->nx,
+            FLOAT_EPSILON
+        );
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(
+            expectedIt->normal->ny,
+            actualIt->normal->ny,
+            FLOAT_EPSILON
+        );
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(
+            expectedIt->normal->nz,
+            actualIt->normal->nz,
+            FLOAT_EPSILON
+        );
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Equipment::csptr& expectedEquipment(const std::size_t variant = 0)
+{
+    const auto& generator =
+        []
+        {
+            auto tmp = data::Equipment::New();
+            tmp->setInstitutionName(UUID::generateUUID());
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Equipment::csptr> equipments;
+    const auto& it = equipments.find(variant);
+
+    if(it == equipments.cend())
+    {
+        return equipments.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Equipment::sptr newEquipment(const std::size_t variant = 0)
+{
+    const auto& equipment = data::Equipment::New();
+    equipment->deepCopy(expectedEquipment(variant));
+    return equipment;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testEquipment(const data::Equipment::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedEquipment(variant);
+    CPPUNIT_ASSERT_EQUAL(expected->getInstitutionName(), actual->getInstitutionName());
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Patient::csptr& expectedPatient(const std::size_t variant = 0)
+{
+    const auto& generator =
+        []
+        {
+            auto tmp = data::Patient::New();
+            tmp->setName(UUID::generateUUID());
+            tmp->setPatientId(UUID::generateUUID());
+            tmp->setBirthdate(UUID::generateUUID());
+            tmp->setSex(UUID::generateUUID());
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Patient::csptr> patients;
+    const auto& it = patients.find(variant);
+
+    if(it == patients.cend())
+    {
+        return patients.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Patient::sptr newPatient(const std::size_t variant = 0)
+{
+    const auto& patient = data::Patient::New();
+    patient->deepCopy(expectedPatient(variant));
+    return patient;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testPatient(const data::Patient::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedPatient(variant);
+    CPPUNIT_ASSERT_EQUAL(expected->getName(), actual->getName());
+    CPPUNIT_ASSERT_EQUAL(expected->getPatientId(), actual->getPatientId());
+    CPPUNIT_ASSERT_EQUAL(expected->getBirthdate(), actual->getBirthdate());
+    CPPUNIT_ASSERT_EQUAL(expected->getSex(), actual->getSex());
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Study::csptr& expectedStudy(const std::size_t variant = 0)
+{
+    const auto& generator =
+        []
+        {
+            auto tmp = data::Study::New();
+            tmp->setInstanceUID(UUID::generateUUID());
+            tmp->setStudyID(UUID::generateUUID());
+            tmp->setDate(UUID::generateUUID());
+            tmp->setTime(UUID::generateUUID());
+            tmp->setReferringPhysicianName(UUID::generateUUID());
+            tmp->setConsultingPhysicianName(UUID::generateUUID());
+            tmp->setDescription(UUID::generateUUID());
+            tmp->setPatientAge(UUID::generateUUID());
+            tmp->setPatientSize(UUID::generateUUID());
+            tmp->setPatientWeight(UUID::generateUUID());
+            tmp->setPatientBodyMassIndex(UUID::generateUUID());
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Study::csptr> studies;
+    const auto& it = studies.find(variant);
+
+    if(it == studies.cend())
+    {
+        return studies.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Study::sptr newStudy(const std::size_t variant = 0)
+{
+    const auto& study = data::Study::New();
+    study->deepCopy(expectedStudy(variant));
+    return study;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testStudy(const data::Study::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedStudy(variant);
+    CPPUNIT_ASSERT_EQUAL(expected->getInstanceUID(), actual->getInstanceUID());
+    CPPUNIT_ASSERT_EQUAL(expected->getStudyID(), actual->getStudyID());
+    CPPUNIT_ASSERT_EQUAL(expected->getDate(), actual->getDate());
+    CPPUNIT_ASSERT_EQUAL(expected->getTime(), actual->getTime());
+    CPPUNIT_ASSERT_EQUAL(expected->getReferringPhysicianName(), actual->getReferringPhysicianName());
+    CPPUNIT_ASSERT_EQUAL(expected->getConsultingPhysicianName(), actual->getConsultingPhysicianName());
+    CPPUNIT_ASSERT_EQUAL(expected->getDescription(), actual->getDescription());
+    CPPUNIT_ASSERT_EQUAL(expected->getPatientAge(), actual->getPatientAge());
+    CPPUNIT_ASSERT_EQUAL(expected->getPatientSize(), actual->getPatientSize());
+    CPPUNIT_ASSERT_EQUAL(expected->getPatientWeight(), actual->getPatientWeight());
+    CPPUNIT_ASSERT_EQUAL(expected->getPatientBodyMassIndex(), actual->getPatientBodyMassIndex());
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Series::csptr& expectedSeries(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::Series::New();
+            tmp->setPatient(newPatient(variant));
+            tmp->setStudy(newStudy(variant));
+            tmp->setEquipment(newEquipment(variant));
+
+            // Fill trivial attributes
+            tmp->setModality(UUID::generateUUID());
+            tmp->setInstanceUID(UUID::generateUUID());
+            tmp->setNumber(UUID::generateUUID());
+            tmp->setLaterality(UUID::generateUUID());
+            tmp->setDate(UUID::generateUUID());
+            tmp->setTime(UUID::generateUUID());
+            tmp->setPerformingPhysiciansName(
+                {
+                    UUID::generateUUID(),
+                    UUID::generateUUID(),
+                    UUID::generateUUID()
+                });
+            tmp->setProtocolName(UUID::generateUUID());
+            tmp->setDescription(UUID::generateUUID());
+            tmp->setBodyPartExamined(UUID::generateUUID());
+            tmp->setPatientPosition(UUID::generateUUID());
+            tmp->setAnatomicalOrientationType(UUID::generateUUID());
+            tmp->setPerformedProcedureStepID(UUID::generateUUID());
+            tmp->setPerformedProcedureStepStartDate(UUID::generateUUID());
+            tmp->setPerformedProcedureStepStartTime(UUID::generateUUID());
+            tmp->setPerformedProcedureStepEndDate(UUID::generateUUID());
+            tmp->setPerformedProcedureStepEndTime(UUID::generateUUID());
+            tmp->setPerformedProcedureStepDescription(UUID::generateUUID());
+            tmp->setPerformedProcedureComments(UUID::generateUUID());
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Series::csptr> series;
+    const auto& it = series.find(variant);
+
+    if(it == series.cend())
+    {
+        return series.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Series::sptr newSeries(const std::size_t variant = 0)
+{
+    const auto& series = data::Series::New();
+    series->deepCopy(expectedSeries(variant));
+    return series;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testSeries(const data::Series::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedSeries(variant);
+    // Equipment
+    testEquipment(actual->getEquipment(), variant);
+
+    // Study
+    testStudy(actual->getStudy(), variant);
+
+    // Patient
+    testPatient(actual->getPatient(), variant);
+
+    // Trivial attributes
+    CPPUNIT_ASSERT_EQUAL(expected->getModality(), actual->getModality());
+    CPPUNIT_ASSERT_EQUAL(expected->getInstanceUID(), actual->getInstanceUID());
+    CPPUNIT_ASSERT_EQUAL(expected->getNumber(), actual->getNumber());
+    CPPUNIT_ASSERT_EQUAL(expected->getLaterality(), actual->getLaterality());
+    CPPUNIT_ASSERT_EQUAL(expected->getDate(), actual->getDate());
+    CPPUNIT_ASSERT_EQUAL(expected->getTime(), actual->getTime());
+
+    const auto& expectedNames = expected->getPerformingPhysiciansName();
+    const auto& actualNames   = actual->getPerformingPhysiciansName();
+    CPPUNIT_ASSERT_EQUAL(expectedNames.size(), actualNames.size());
+
+    for(std::size_t i = 0 ; i < expectedNames.size() ; ++i)
+    {
+        CPPUNIT_ASSERT_EQUAL(expectedNames[i], actualNames[i]);
+    }
+
+    CPPUNIT_ASSERT_EQUAL(expected->getProtocolName(), actual->getProtocolName());
+    CPPUNIT_ASSERT_EQUAL(expected->getDescription(), actual->getDescription());
+    CPPUNIT_ASSERT_EQUAL(expected->getBodyPartExamined(), actual->getBodyPartExamined());
+    CPPUNIT_ASSERT_EQUAL(expected->getPatientPosition(), actual->getPatientPosition());
+    CPPUNIT_ASSERT_EQUAL(expected->getAnatomicalOrientationType(), actual->getAnatomicalOrientationType());
+    CPPUNIT_ASSERT_EQUAL(expected->getPerformedProcedureStepID(), actual->getPerformedProcedureStepID());
+    CPPUNIT_ASSERT_EQUAL(expected->getPerformedProcedureStepStartDate(), actual->getPerformedProcedureStepStartDate());
+    CPPUNIT_ASSERT_EQUAL(expected->getPerformedProcedureStepStartTime(), actual->getPerformedProcedureStepStartTime());
+    CPPUNIT_ASSERT_EQUAL(expected->getPerformedProcedureStepEndDate(), actual->getPerformedProcedureStepEndDate());
+    CPPUNIT_ASSERT_EQUAL(expected->getPerformedProcedureStepEndTime(), actual->getPerformedProcedureStepEndTime());
+    CPPUNIT_ASSERT_EQUAL(
+        expected->getPerformedProcedureStepDescription(),
+        actual->getPerformedProcedureStepDescription()
+    );
+    CPPUNIT_ASSERT_EQUAL(expected->getPerformedProcedureComments(), actual->getPerformedProcedureComments());
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::ActivitySeries::csptr& expectedActivitySeries(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::ActivitySeries::New();
+            tmp->setData(newComposite(variant));
+            tmp->setPatient(newPatient(variant));
+            tmp->setStudy(newStudy(variant));
+            tmp->setEquipment(newEquipment(variant));
+
+            // Fill trivial attributes
+            tmp->setActivityConfigId(UUID::generateUUID());
+            tmp->setModality(UUID::generateUUID());
+            tmp->setInstanceUID(UUID::generateUUID());
+            tmp->setNumber(UUID::generateUUID());
+            tmp->setLaterality(UUID::generateUUID());
+            tmp->setDate(UUID::generateUUID());
+            tmp->setTime(UUID::generateUUID());
+            tmp->setPerformingPhysiciansName({UUID::generateUUID(), UUID::generateUUID()});
+            tmp->setProtocolName(UUID::generateUUID());
+            tmp->setDescription(UUID::generateUUID());
+            tmp->setBodyPartExamined(UUID::generateUUID());
+            tmp->setPatientPosition(UUID::generateUUID());
+            tmp->setAnatomicalOrientationType(UUID::generateUUID());
+            tmp->setPerformedProcedureStepID(UUID::generateUUID());
+            tmp->setPerformedProcedureStepStartDate(UUID::generateUUID());
+            tmp->setPerformedProcedureStepStartTime(UUID::generateUUID());
+            tmp->setPerformedProcedureStepEndDate(UUID::generateUUID());
+            tmp->setPerformedProcedureStepEndTime(UUID::generateUUID());
+            tmp->setPerformedProcedureStepDescription(UUID::generateUUID());
+            tmp->setPerformedProcedureComments(UUID::generateUUID());
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::ActivitySeries::csptr> activitySeries;
+    const auto& it = activitySeries.find(variant);
+
+    if(it == activitySeries.cend())
+    {
+        return activitySeries.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::ActivitySeries::sptr newActivitySeries(const std::size_t variant = 0)
+{
+    const auto& activitySeries = data::ActivitySeries::New();
+    activitySeries->deepCopy(expectedActivitySeries(variant));
+    return activitySeries;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testActivitySeries(const data::ActivitySeries::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedActivitySeries(variant);
+
+    // Equipment
+    testEquipment(actual->getEquipment(), variant);
+
+    // Study
+    testStudy(actual->getStudy(), variant);
+
+    // Patient
+    testPatient(actual->getPatient(), variant);
+
+    // Data
+    testComposite(actual->getData(), variant);
+
+    // Trivial attributes
+    CPPUNIT_ASSERT_EQUAL(expected->getActivityConfigId(), actual->getActivityConfigId());
+    CPPUNIT_ASSERT_EQUAL(expected->getModality(), actual->getModality());
+    CPPUNIT_ASSERT_EQUAL(expected->getInstanceUID(), actual->getInstanceUID());
+    CPPUNIT_ASSERT_EQUAL(expected->getNumber(), actual->getNumber());
+    CPPUNIT_ASSERT_EQUAL(expected->getLaterality(), actual->getLaterality());
+    CPPUNIT_ASSERT_EQUAL(expected->getDate(), actual->getDate());
+    CPPUNIT_ASSERT_EQUAL(expected->getTime(), actual->getTime());
+
+    const auto& expectedNames = expected->getPerformingPhysiciansName();
+    const auto& actualNames   = actual->getPerformingPhysiciansName();
+    CPPUNIT_ASSERT_EQUAL(expectedNames.size(), actualNames.size());
+
+    for(std::size_t i = 0 ; i < expectedNames.size() ; ++i)
+    {
+        CPPUNIT_ASSERT_EQUAL(expectedNames[i], actualNames[i]);
+    }
+
+    CPPUNIT_ASSERT_EQUAL(expected->getProtocolName(), actual->getProtocolName());
+    CPPUNIT_ASSERT_EQUAL(expected->getDescription(), actual->getDescription());
+    CPPUNIT_ASSERT_EQUAL(expected->getBodyPartExamined(), actual->getBodyPartExamined());
+    CPPUNIT_ASSERT_EQUAL(expected->getPatientPosition(), actual->getPatientPosition());
+    CPPUNIT_ASSERT_EQUAL(expected->getAnatomicalOrientationType(), actual->getAnatomicalOrientationType());
+    CPPUNIT_ASSERT_EQUAL(expected->getPerformedProcedureStepID(), actual->getPerformedProcedureStepID());
+    CPPUNIT_ASSERT_EQUAL(
+        expected->getPerformedProcedureStepStartDate(),
+        actual->getPerformedProcedureStepStartDate()
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        expected->getPerformedProcedureStepStartTime(),
+        actual->getPerformedProcedureStepStartTime()
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        expected->getPerformedProcedureStepEndDate(),
+        actual->getPerformedProcedureStepEndDate()
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        expected->getPerformedProcedureStepEndTime(),
+        actual->getPerformedProcedureStepEndTime()
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        expected->getPerformedProcedureStepDescription(),
+        actual->getPerformedProcedureStepDescription()
+    );
+    CPPUNIT_ASSERT_EQUAL(expected->getPerformedProcedureComments(), actual->getPerformedProcedureComments());
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Array::csptr& expectedArray(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::Array::New();
+
+            if(variant % 2 == 0)
+            {
+                tmp->resize(
+                    {variant + 2, variant + 2},
+                    core::tools::Type::s_UINT8,
+                    true
+                );
+
+                std::uint8_t counter = 0;
+                for(auto it = tmp->begin<std::uint8_t>(),
+                    end = tmp->end<std::uint8_t>() ;
+                    it != end ;
+                    ++it)
+                {
+                    *it = static_cast<std::uint8_t>(variant) + counter++;
+                }
+            }
+            else
+            {
+                tmp->resize(
+                    {variant + 2, variant + 2},
+                    core::tools::Type::s_DOUBLE,
+                    true
+                );
+
+                double counter = 0.0;
+                for(auto it = tmp->begin<double>(),
+                    end = tmp->end<double>() ;
+                    it != end ;
+                    ++it)
+                {
+                    *it = static_cast<double>(variant) + counter++;
+                }
+            }
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Array::csptr> arrays;
+    const auto& it = arrays.find(variant);
+
+    if(it == arrays.cend())
+    {
+        return arrays.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Array::sptr newArray(const std::size_t variant = 0)
+{
+    const auto& array = data::Array::New();
+    array->deepCopy(expectedArray(variant));
+    return array;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testArray(const data::Array::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedArray(variant);
+
+    const auto& expectedSize = expected->getSize();
+    const auto& actualSize   = actual->getSize();
+
+    for(std::size_t i = 0, end = expectedSize.size() ; i < end ; ++i)
+    {
+        CPPUNIT_ASSERT_EQUAL(expectedSize[i], actualSize[i]);
+    }
+
+    if(variant % 2 == 0)
+    {
+        for(auto expectedIt = expected->begin<std::uint8_t>(),
+            expectedEnd = expected->end<std::uint8_t>(),
+            actualIt = actual->begin<std::uint8_t>(),
+            actualEnd = actual->end<std::uint8_t>() ;
+            expectedIt != expectedEnd && actualIt != actualEnd ;
+            ++expectedIt, ++actualIt)
+        {
+            CPPUNIT_ASSERT_EQUAL(*expectedIt, *actualIt);
+        }
+    }
+    else
+    {
+        for(auto expectedIt = expected->begin<double>(),
+            expectedEnd = expected->end<double>(),
+            actualIt = actual->begin<double>(),
+            actualEnd = actual->end<double>() ;
+            expectedIt != expectedEnd && actualIt != actualEnd ;
+            ++expectedIt, ++actualIt)
+        {
+            CPPUNIT_ASSERT_DOUBLES_EQUAL(*expectedIt, *actualIt, DOUBLE_EPSILON);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Image::csptr& expectedImage(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp        = data::Image::New();
+            const auto lock = tmp->lock();
+
+            const double dvariant = static_cast<double>(variant);
+
+            utestData::generator::Image::generateImage(
+                tmp,
+                {variant + 3, variant + 3, variant + 3},
+                {dvariant + 1.0, dvariant + 1.0, dvariant + 1.0},
+                {dvariant + 0.0, dvariant + 0.0, dvariant + 0.0},
+                variant % 2 == 0 ? core::tools::Type::s_UINT8 : core::tools::Type::s_FLOAT,
+                variant % 2 == 0 ? data::Image::PixelFormat::BGRA : data::Image::PixelFormat::GRAY_SCALE
+            );
+            utestData::generator::Image::randomizeImage(tmp);
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Image::csptr> images;
+    const auto& it = images.find(variant);
+
+    if(it == images.cend())
+    {
+        return images.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Image::sptr newImage(const std::size_t variant = 0)
+{
+    const auto& image = data::Image::New();
+    image->deepCopy(expectedImage(variant));
+    return image;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testImage(const data::Image::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedImage(variant);
+
+    const auto& expectedSize = expected->getSize2();
+    const auto& actualSize   = actual->getSize2();
+
+    for(std::size_t i = 0, end = expectedSize.size() ; i < end ; ++i)
+    {
+        CPPUNIT_ASSERT_EQUAL(expectedSize[i], actualSize[i]);
+    }
+
+    const auto& expectedSpacing = expected->getSpacing2();
+    const auto& actualSpacing   = actual->getSpacing2();
+
+    for(std::size_t i = 0, end = expectedSpacing.size() ; i < end ; ++i)
+    {
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedSpacing[i], actualSpacing[i], DOUBLE_EPSILON);
+    }
+
+    const auto& expectedOrigin = expected->getOrigin2();
+    const auto& actualOrigin   = actual->getOrigin2();
+
+    for(std::size_t i = 0, end = expectedOrigin.size() ; i < end ; ++i)
+    {
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedOrigin[i], actualOrigin[i], DOUBLE_EPSILON);
+    }
+
+    CPPUNIT_ASSERT_EQUAL(expected->getType(), actual->getType());
+
+    if(variant % 2 == 0)
+    {
+        for(auto expectedIt = expected->begin<std::uint8_t>(),
+            expectedEnd = expected->end<std::uint8_t>(),
+            actualIt = actual->begin<std::uint8_t>(),
+            actualEnd = actual->end<std::uint8_t>() ;
+            expectedIt != expectedEnd && actualIt != actualEnd ;
+            ++expectedIt, ++actualIt)
+        {
+            CPPUNIT_ASSERT_EQUAL(*expectedIt, *actualIt);
+        }
+    }
+    else
+    {
+        for(auto expectedIt = expected->begin<double>(),
+            expectedEnd = expected->end<double>(),
+            actualIt = actual->begin<double>(),
+            actualEnd = actual->end<double>() ;
+            expectedIt != expectedEnd && actualIt != actualEnd ;
+            ++expectedIt, ++actualIt)
+        {
+            CPPUNIT_ASSERT_DOUBLES_EQUAL(*expectedIt, *actualIt, DOUBLE_EPSILON);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Vector::csptr& expectedVector(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp        = data::Vector::New();
+            auto& container = tmp->getContainer();
+            container.push_back(newBoolean(variant));
+            container.push_back(newInteger(variant));
+            container.push_back(newFloat(variant));
+            container.push_back(newString(variant));
+            container.push_back(newActivitySeries(variant));
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Vector::csptr> vectors;
+    const auto& it = vectors.find(variant);
+
+    if(it == vectors.cend())
+    {
+        return vectors.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Vector::sptr newVector(const std::size_t variant = 0)
+{
+    const auto& vector = data::Vector::New();
+    vector->deepCopy(expectedVector(variant));
+    return vector;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testVector(const data::Vector::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    auto it = actual->getContainer().cbegin();
+    testBoolean(data::Boolean::dynamicCast(*it++), variant);
+    testInteger(data::Integer::dynamicCast(*it++), variant);
+    testFloat(data::Float::dynamicCast(*it++), variant);
+    testString(data::String::dynamicCast(*it++), variant);
+    testActivitySeries(data::ActivitySeries::dynamicCast(*it++), variant);
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Point::csptr& expectedPoint(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::Point::New();
+
+            const double dvariant = static_cast<double>(variant);
+            tmp->setCoord({1.0 + dvariant, 2.0 + dvariant, 3.0 + dvariant});
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Point::csptr> points;
+    const auto& it = points.find(variant);
+
+    if(it == points.cend())
+    {
+        return points.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Point::sptr newPoint(const std::size_t variant = 0)
+{
+    const auto& point = data::Point::New();
+    point->deepCopy(expectedPoint(variant));
+    return point;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testPoint(const data::Point::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expectedCoord = expectedPoint(variant)->getCoord();
+    const auto& actualCoord   = actual->getCoord();
+    CPPUNIT_ASSERT_EQUAL(expectedCoord.size(), actualCoord.size());
+
+    for(auto expectedIt = expectedCoord.cbegin(),
+        expectedEnd = expectedCoord.cend(),
+        actualIt = actualCoord.cbegin(),
+        actualEnd = actualCoord.cend() ;
+        expectedIt != expectedEnd && actualIt != actualEnd ;
+        ++expectedIt, ++actualIt)
+    {
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(*expectedIt, *actualIt, DOUBLE_EPSILON);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::PointList::csptr& expectedPointList(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp     = data::PointList::New();
+            auto& points = tmp->getPoints();
+            for(std::size_t i = 0, end = variant + 3, pointVariant = variant * end ; i < end ; ++i)
+            {
+                points.push_back(newPoint(pointVariant + i));
+            }
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::PointList::csptr> pointLists;
+    const auto& it = pointLists.find(variant);
+
+    if(it == pointLists.cend())
+    {
+        return pointLists.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::PointList::sptr newPointList(const std::size_t variant = 0)
+{
+    const auto& pointList = data::PointList::New();
+    pointList->deepCopy(expectedPointList(variant));
+    return pointList;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testPointList(const data::PointList::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expectedPoints = expectedPointList(variant)->getPoints();
+    const auto& actualPoints   = actual->getPoints();
+    CPPUNIT_ASSERT_EQUAL(expectedPoints.size(), actualPoints.size());
+
+    for(std::size_t i = 0, end = expectedPoints.size(), pointVariant = variant * end ; i < end ; ++i)
+    {
+        testPoint(actualPoints.at(i), pointVariant + i);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::CalibrationInfo::csptr& expectedCalibrationInfo(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::CalibrationInfo::New();
+
+            for(std::size_t i = 0, end = variant + 2 ; i < end ; ++i)
+            {
+                // Create the Image
+                auto image = newImage(variant + i);
+
+                // Create the PointList
+                auto pointList = newPointList(variant + i);
+
+                tmp->addRecord(image, pointList);
+            }
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::CalibrationInfo::csptr> calibrationInfos;
+    const auto& it = calibrationInfos.find(variant);
+
+    if(it == calibrationInfos.cend())
+    {
+        return calibrationInfos.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::CalibrationInfo::sptr newCalibrationInfo(const std::size_t variant = 0)
+{
+    const auto& calibrationInfo = data::CalibrationInfo::New();
+    calibrationInfo->deepCopy(expectedCalibrationInfo(variant));
+    return calibrationInfo;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testCalibrationInfo(const data::CalibrationInfo::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    for(std::size_t i = 0, end = variant + 2 ; i < end ; ++i)
+    {
+        const auto& image = actual->getImage(i);
+        testImage(image, variant + i);
+
+        const auto& pointList = actual->getPointList(image);
+        testPointList(pointList, variant + i);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Camera::csptr& expectedCamera(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::Camera::New();
+
+            const double dvariant = static_cast<double>(variant);
+            const float fvariant  = static_cast<float>(variant);
+
+            tmp->setWidth(100 + variant);
+            tmp->setHeight(100 + variant);
+            tmp->setFx(0.1 + dvariant);
+            tmp->setFy(0.2 + dvariant);
+            tmp->setCx(0.3 + dvariant);
+            tmp->setCy(0.4 + dvariant);
+            tmp->setDistortionCoefficient(
+                0.5 + dvariant,
+                0.6 + dvariant,
+                0.7 + dvariant,
+                0.8 + dvariant,
+                0.9 + dvariant
+            );
+            tmp->setSkew(0.11 + dvariant);
+            tmp->setIsCalibrated(variant % 2 == 0);
+            tmp->setDescription(UUID::generateUUID());
+            tmp->setCameraID(UUID::generateUUID());
+            tmp->setMaximumFrameRate(66.6F + fvariant);
+            tmp->setPixelFormat(
+                variant % 2 == 0
+                ? data::Camera::PixelFormat::AYUV444
+                : data::Camera::PixelFormat::BGR24
+            );
+            tmp->setVideoFile("/" + UUID::generateUUID());
+            tmp->setStreamUrl(UUID::generateUUID());
+            tmp->setCameraSource(
+                variant % 2 == 0
+                ? data::Camera::SourceType::DEVICE
+                : data::Camera::SourceType::UNKNOWN
+            );
+            tmp->setScale(0.789 + dvariant);
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Camera::csptr> cameras;
+    const auto& it = cameras.find(variant);
+
+    if(it == cameras.cend())
+    {
+        return cameras.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Camera::sptr newCamera(const std::size_t variant = 0)
+{
+    const auto& camera = data::Camera::New();
+    camera->deepCopy(expectedCamera(variant));
+    return camera;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testCamera(const data::Camera::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedCamera(variant);
+
+    CPPUNIT_ASSERT_EQUAL(expected->getWidth(), actual->getWidth());
+    CPPUNIT_ASSERT_EQUAL(expected->getHeight(), actual->getHeight());
+
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected->getFx(), actual->getFx(), DOUBLE_EPSILON);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected->getFy(), actual->getFy(), DOUBLE_EPSILON);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected->getCx(), actual->getCx(), DOUBLE_EPSILON);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected->getCy(), actual->getCy(), DOUBLE_EPSILON);
+
+    const auto& expectedCoefficient = expected->getDistortionCoefficient();
+    const auto& actualCoefficient   = actual->getDistortionCoefficient();
+    CPPUNIT_ASSERT_EQUAL(expectedCoefficient.size(), actualCoefficient.size());
+    for(std::size_t i = 0, end = expectedCoefficient.size() ; i < end ; ++i)
+    {
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedCoefficient[i], actualCoefficient[i], DOUBLE_EPSILON);
+    }
+
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected->getSkew(), actual->getSkew(), DOUBLE_EPSILON);
+    CPPUNIT_ASSERT_EQUAL(expected->getIsCalibrated(), actual->getIsCalibrated());
+    CPPUNIT_ASSERT_EQUAL(expected->getDescription(), actual->getDescription());
+    CPPUNIT_ASSERT_EQUAL(expected->getCameraID(), actual->getCameraID());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected->getMaximumFrameRate(), actual->getMaximumFrameRate(), FLOAT_EPSILON);
+    CPPUNIT_ASSERT_EQUAL(expected->getPixelFormat(), actual->getPixelFormat());
+    CPPUNIT_ASSERT_EQUAL(expected->getVideoFile(), actual->getVideoFile());
+    CPPUNIT_ASSERT_EQUAL(expected->getStreamUrl(), actual->getStreamUrl());
+    CPPUNIT_ASSERT_EQUAL(expected->getCameraSource(), actual->getCameraSource());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected->getScale(), actual->getScale(), DOUBLE_EPSILON);
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::CameraSeries::csptr& expectedCameraSeries(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::CameraSeries::New();
+
+            for(std::size_t i = 0, end = variant + 2 ; i < end ; ++i)
+            {
+                tmp->addCamera(newCamera(variant + i));
+            }
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::CameraSeries::csptr> cameraSeries;
+    const auto& it = cameraSeries.find(variant);
+
+    if(it == cameraSeries.cend())
+    {
+        return cameraSeries.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::CameraSeries::sptr newCameraSeries(const std::size_t variant = 0)
+{
+    const auto& cameraSeries = data::CameraSeries::New();
+    cameraSeries->deepCopy(expectedCameraSeries(variant));
+    return cameraSeries;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testCameraSeries(const data::CameraSeries::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    for(std::size_t i = 0, end = actual->getNumberOfCameras() ; i < end ; ++i)
+    {
+        testCamera(actual->getCamera(i), variant + i);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Color::csptr& expectedColor(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp             = data::Color::New();
+            const float fvariant = static_cast<float>(variant);
+            tmp->setRGBA(0.1F + fvariant, 0.2F + fvariant, 0.3F + fvariant, 0.4F + fvariant);
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Color::csptr> colors;
+    const auto& it = colors.find(variant);
+
+    if(it == colors.cend())
+    {
+        return colors.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Color::sptr newColor(const std::size_t variant = 0)
+{
+    const auto& color = data::Color::New();
+    color->deepCopy(expectedColor(variant));
+    return color;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testColor(const data::Color::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedColor(variant);
+
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected->red(), actual->red(), FLOAT_EPSILON);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected->green(), actual->green(), FLOAT_EPSILON);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected->blue(), actual->blue(), FLOAT_EPSILON);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected->alpha(), actual->alpha(), FLOAT_EPSILON);
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Edge::csptr& expectedEdge(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::Edge::New();
+            tmp->setNature(UUID::generateUUID());
+            tmp->setIdentifiers(UUID::generateUUID(), UUID::generateUUID());
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Edge::csptr> edges;
+    const auto& it = edges.find(variant);
+
+    if(it == edges.cend())
+    {
+        return edges.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Edge::sptr newEdge(const std::size_t variant = 0)
+{
+    const auto& edge = data::Edge::New();
+    edge->deepCopy(expectedEdge(variant));
+    return edge;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testEdge(const data::Edge::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedEdge(variant);
+
+    CPPUNIT_ASSERT_EQUAL(expected->getFromPortID(), actual->getFromPortID());
+    CPPUNIT_ASSERT_EQUAL(expected->getToPortID(), actual->getToPortID());
+    CPPUNIT_ASSERT_EQUAL(expected->getNature(), actual->getNature());
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Port::csptr& expectedPort(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::Port::New();
+            tmp->setIdentifier(UUID::generateUUID());
+            tmp->setType(UUID::generateUUID());
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Port::csptr> ports;
+    const auto& it = ports.find(variant);
+
+    if(it == ports.cend())
+    {
+        return ports.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Port::sptr newPort(const std::size_t variant = 0)
+{
+    const auto& port = data::Port::New();
+    port->deepCopy(expectedPort(variant));
+    return port;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testPort(const data::Port::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedPort(variant);
+
+    CPPUNIT_ASSERT_EQUAL(expected->getIdentifier(), actual->getIdentifier());
+    CPPUNIT_ASSERT_EQUAL(expected->getType(), actual->getType());
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Node::csptr& expectedNode(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::Node::New();
+            tmp->setObject(newString(variant));
+
+            const std::size_t portCount = variant + 2;
+            for(std::size_t i = 0, end = portCount ; i < end ; ++i)
+            {
+                tmp->addInputPort(newPort(variant + i));
+            }
+
+            for(std::size_t i = portCount, end = 2 * (portCount) ; i < end ; ++i)
+            {
+                tmp->addOutputPort(newPort(variant + i));
+            }
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Node::csptr> nodes;
+    const auto& it = nodes.find(variant);
+
+    if(it == nodes.cend())
+    {
+        return nodes.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Node::sptr newNode(const std::size_t variant = 0)
+{
+    const auto& node = data::Node::New();
+    node->deepCopy(expectedNode(variant));
+    return node;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testNode(const data::Node::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    testString(data::String::dynamicCast(actual->getObject()), variant);
+
+    const auto& inputs = actual->getInputPorts();
+    for(std::size_t i = 0, end = inputs.size() ; i < end ; ++i)
+    {
+        testPort(inputs.at(i), variant + i);
+    }
+
+    const auto& outputs = actual->getOutputPorts();
+    for(std::size_t i = 0, end = outputs.size() ; i < end ; ++i)
+    {
+        testPort(outputs.at(i), inputs.size() + variant + i);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Graph::csptr& expectedGraph(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::Graph::New();
+
+            for(std::size_t i = 0, end = variant + 2 ; i < end ; ++i)
+            {
+                auto upNode   = newNode(variant + i);
+                auto downNode = newNode(variant + i + 1);
+
+                tmp->addNode(upNode);
+                tmp->addNode(downNode);
+                tmp->addEdge(newEdge(variant + i), upNode, downNode);
+            }
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Graph::csptr> graphs;
+    const auto& it = graphs.find(variant);
+
+    if(it == graphs.cend())
+    {
+        return graphs.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Graph::sptr newGraph(const std::size_t variant = 0)
+{
+    const auto& graph = data::Graph::New();
+    graph->deepCopy(expectedGraph(variant));
+    return graph;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testGraph(const data::Graph::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    std::size_t i = 0;
+    for(const auto& connection : actual->getConnections())
+    {
+        testEdge(connection.first, i + variant);
+        testNode(connection.second.first, i + variant);
+        testNode(connection.second.second, ++i + variant);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Histogram::csptr& expectedHistogram(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::Histogram::New();
+
+            std::vector<long> values;
+            for(std::size_t i = 0, end = variant + 2 ; i < end ; ++i)
+            {
+                values.push_back(static_cast<long>(i + variant));
+            }
+
+            tmp->setValues(values);
+
+            const float fvariant = static_cast<float>(variant);
+            tmp->setBinsWidth(0.1F + fvariant);
+            tmp->setMaxValue(0.2F + fvariant);
+            tmp->setMinValue(0.3F + fvariant);
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Histogram::csptr> histograms;
+    const auto& it = histograms.find(variant);
+
+    if(it == histograms.cend())
+    {
+        return histograms.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Histogram::sptr newHistogram(const std::size_t variant = 0)
+{
+    const auto& histogram = data::Histogram::New();
+    histogram->deepCopy(expectedHistogram(variant));
+    return histogram;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testHistogram(const data::Histogram::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedHistogram(variant);
+
+    const auto& expectedValues = expected->getValues();
+    const auto& actualValues   = actual->getValues();
+    CPPUNIT_ASSERT_EQUAL(expectedValues.size(), actualValues.size());
+
+    for(size_t i = 0, end = expectedValues.size() ; i < end ; ++i)
+    {
+        CPPUNIT_ASSERT_EQUAL(expectedValues.at(i), actualValues.at(i));
+    }
+
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected->getBinsWidth(), actual->getBinsWidth(), FLOAT_EPSILON);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected->getMaxValue(), actual->getMaxValue(), FLOAT_EPSILON);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected->getMinValue(), actual->getMinValue(), FLOAT_EPSILON);
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Landmarks::csptr& expectedLandmarks(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::Landmarks::New();
+
+            const float fvariant  = static_cast<float>(variant);
+            const double dvariant = static_cast<double>(variant);
+
+            for(std::size_t i = 0, endi = variant + 2 ; i < endi ; ++i)
+            {
+                const std::string name = UUID::generateUUID();
+
+                tmp->addGroup(
+                    name,
+                    {1.0F + fvariant, 2.0F + fvariant, 3.0F + fvariant, 4.0F + fvariant},
+                    fvariant,
+                    variant % 2 == 0 ? data::Landmarks::Shape::CUBE : data::Landmarks::Shape::SPHERE,
+                    variant % 2 == 0
+                );
+
+                for(std::size_t j = 0, endj = variant + 2 ; j < endj ; ++j)
+                {
+                    const double dj = static_cast<double>(j);
+                    tmp->addPoint(name, {1.0 + dvariant + dj, 2.0 + dvariant + dj, 3.0 + dvariant + dj});
+                }
+            }
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Landmarks::csptr> landmarks;
+    const auto& it = landmarks.find(variant);
+
+    if(it == landmarks.cend())
+    {
+        return landmarks.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Landmarks::sptr newLandmarks(const std::size_t variant = 0)
+{
+    const auto& landmarks = data::Landmarks::New();
+    landmarks->deepCopy(expectedLandmarks(variant));
+    return landmarks;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testLandmarks(const data::Landmarks::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedLandmarks(variant);
+
+    const auto& expectedGroupNames = expected->getGroupNames();
+    const auto& actualGroupNames   = actual->getGroupNames();
+
+    CPPUNIT_ASSERT_EQUAL(expectedGroupNames.size(), actualGroupNames.size());
+
+    for(const auto& name : expectedGroupNames)
+    {
+        // Test name
+        CPPUNIT_ASSERT_NO_THROW(expected->getGroup(name));
+        const auto& expectedGroup = expected->getGroup(name);
+
+        CPPUNIT_ASSERT_NO_THROW(actual->getGroup(name));
+        const auto& actualGroup = actual->getGroup(name);
+
+        // Test color
+        for(size_t i = 0, end = expectedGroup.m_color.size() ; i < end ; ++i)
+        {
+            CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedGroup.m_color[i], actualGroup.m_color[i], FLOAT_EPSILON);
+        }
+
+        // Test size
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedGroup.m_size, actualGroup.m_size, FLOAT_EPSILON);
+
+        // Test shape
+        CPPUNIT_ASSERT_EQUAL(expectedGroup.m_shape, actualGroup.m_shape);
+
+        // Test visibility
+        CPPUNIT_ASSERT_EQUAL(expectedGroup.m_visibility, actualGroup.m_visibility);
+
+        // Test points
+        for(std::size_t i = 0, endi = expectedGroup.m_points.size() ; i < endi ; ++i)
+        {
+            for(std::size_t j = 0, endj = expectedGroup.m_points[i].size() ; j < endj ; ++j)
+            {
+                CPPUNIT_ASSERT_DOUBLES_EQUAL(
+                    expectedGroup.m_points[i][j],
+                    actualGroup.m_points[i][j],
+                    DOUBLE_EPSILON
+                );
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Line::csptr& expectedLine(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::Line::New();
+
+            tmp->setPosition(newPoint(variant));
+            tmp->setDirection(newPoint(variant + 1));
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Line::csptr> lines;
+    const auto& it = lines.find(variant);
+
+    if(it == lines.cend())
+    {
+        return lines.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Line::sptr newLine(const std::size_t variant = 0)
+{
+    const auto& line = data::Line::New();
+    line->deepCopy(expectedLine(variant));
+    return line;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testLine(const data::Line::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    testPoint(actual->getPosition(), variant);
+    testPoint(actual->getDirection(), variant + 1);
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::List::csptr& expectedList(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp        = data::List::New();
+            auto& container = tmp->getContainer();
+            container.push_back(newBoolean(variant));
+            container.push_back(newInteger(variant));
+            container.push_back(newFloat(variant));
+            container.push_back(newString(variant));
+            container.push_back(newActivitySeries(variant));
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::List::csptr> lists;
+    const auto& it = lists.find(variant);
+
+    if(it == lists.cend())
+    {
+        return lists.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::List::sptr newList(const std::size_t variant = 0)
+{
+    const auto& list = data::List::New();
+    list->deepCopy(expectedList(variant));
+    return list;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testList(const data::List::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    auto it = actual->getContainer().cbegin();
+    testBoolean(data::Boolean::dynamicCast(*it++), variant);
+    testInteger(data::Integer::dynamicCast(*it++), variant);
+    testFloat(data::Float::dynamicCast(*it++), variant);
+    testString(data::String::dynamicCast(*it++), variant);
+    testActivitySeries(data::ActivitySeries::dynamicCast(*it++), variant);
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Material::csptr& expectedMaterial(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            data::Material::ShadingType shading[] = {
+                data::Material::ShadingType::AMBIENT,
+                data::Material::ShadingType::FLAT,
+                data::Material::ShadingType::GOURAUD,
+                data::Material::ShadingType::PHONG
+            };
+
+            data::Material::RepresentationType representation[] = {
+                data::Material::RepresentationType::EDGE,
+                data::Material::RepresentationType::POINT,
+                data::Material::RepresentationType::SURFACE,
+                data::Material::RepresentationType::WIREFRAME
+            };
+
+            data::Material::OptionsType options[] = {
+                data::Material::OptionsType::CELLS_NORMALS,
+                data::Material::OptionsType::NORMALS,
+                data::Material::OptionsType::STANDARD
+            };
+
+            auto tmp = data::Material::New();
+
+            // Set ambient color
+            tmp->setAmbient(newColor(variant));
+
+            // Set diffuse color
+            tmp->setDiffuse(newColor(variant + 1));
+
+            // Set diffuse texture
+            tmp->setDiffuseTexture(newImage(variant));
+
+            // Others
+            tmp->setShadingMode(shading[variant % std::size(shading)]);
+            tmp->setRepresentationMode(representation[variant % std::size(representation)]);
+            tmp->setOptionsMode(options[variant % std::size(options)]);
+            tmp->setDiffuseTextureFiltering(
+                variant % 2 == 0
+                ? data::Material::FilteringType::LINEAR
+                : data::Material::FilteringType::NEAREST
+            );
+            tmp->setDiffuseTextureWrapping(
+                variant % 2 == 0
+                ? data::Material::WrappingType::CLAMP
+                : data::Material::WrappingType::REPEAT
+            );
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Material::csptr> materials;
+    const auto& it = materials.find(variant);
+
+    if(it == materials.cend())
+    {
+        return materials.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Material::sptr newMaterial(const std::size_t variant = 0)
+{
+    const auto& material = data::Material::New();
+    material->deepCopy(expectedMaterial(variant));
+    return material;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testMaterial(const data::Material::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedMaterial(variant);
+
+    // Test ambient
+    testColor(actual->ambient(), variant);
+
+    // Test diffuse
+    testColor(actual->diffuse(), variant + 1);
+
+    // Test diffuse texture
+    testImage(actual->getDiffuseTexture(), variant);
+
+    // Test other attributes
+    CPPUNIT_ASSERT_EQUAL(expected->getShadingMode(), actual->getShadingMode());
+    CPPUNIT_ASSERT_EQUAL(expected->getRepresentationMode(), actual->getRepresentationMode());
+    CPPUNIT_ASSERT_EQUAL(expected->getOptionsMode(), actual->getOptionsMode());
+    CPPUNIT_ASSERT_EQUAL(expected->getDiffuseTextureFiltering(), actual->getDiffuseTextureFiltering());
+    CPPUNIT_ASSERT_EQUAL(expected->getDiffuseTextureWrapping(), actual->getDiffuseTextureWrapping());
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Matrix4::csptr& expectedMatrix4(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp           = data::Matrix4::New();
+            auto& coefficients = tmp->getCoefficients();
+
+            double counter = 0.0001;
+            for(auto it = coefficients.begin(), end = coefficients.end() ; it != end ; ++it)
+            {
+                *it = static_cast<double>(variant) + counter++;
+            }
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Matrix4::csptr> matrix4s;
+    const auto& it = matrix4s.find(variant);
+
+    if(it == matrix4s.cend())
+    {
+        return matrix4s.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Matrix4::sptr newMatrix4(const std::size_t variant = 0)
+{
+    const auto& matrix4 = data::Matrix4::New();
+    matrix4->deepCopy(expectedMatrix4(variant));
+    return matrix4;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testMatrix4(const data::Matrix4::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected             = expectedMatrix4(variant);
+    const auto& expectedCoefficients = expected->getCoefficients();
+    const auto& actualCoefficients   = actual->getCoefficients();
+
+    CPPUNIT_ASSERT_EQUAL(expectedCoefficients.size(), actualCoefficients.size());
+
+    for(std::size_t i = 0, end = expectedCoefficients.size() ; i != end ; ++i)
+    {
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedCoefficients[i], actualCoefficients[i], DOUBLE_EPSILON);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Plane::csptr& expectedPlane(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp     = data::Plane::New();
+            auto& points = tmp->getPoints();
+
+            for(std::size_t i = 0, end = points.size() ; i < end ; ++i)
+            {
+                points[i] = newPoint(i + variant);
+            }
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Plane::csptr> planes;
+    const auto& it = planes.find(variant);
+
+    if(it == planes.cend())
+    {
+        return planes.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Plane::sptr newPlane(const std::size_t variant = 0)
+{
+    const auto& plane = data::Plane::New();
+    plane->deepCopy(expectedPlane(variant));
+    return plane;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testPlane(const data::Plane::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& points = actual->getPoints();
+
+    for(std::size_t i = 0, end = points.size() ; i < end ; ++i)
+    {
+        testPoint(points.at(i), i + variant);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::PlaneList::csptr& expectedPlaneList(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp     = data::PlaneList::New();
+            auto& planes = tmp->getPlanes();
+
+            for(std::size_t i = 0, end = variant + 2 ; i < end ; ++i)
+            {
+                planes.push_back(newPlane(variant + i));
+            }
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::PlaneList::csptr> planelists;
+    const auto& it = planelists.find(variant);
+
+    if(it == planelists.cend())
+    {
+        return planelists.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::PlaneList::sptr newPlaneList(const std::size_t variant = 0)
+{
+    const auto& planelist = data::PlaneList::New();
+    planelist->deepCopy(expectedPlaneList(variant));
+    return planelist;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testPlaneList(const data::PlaneList::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& planes = actual->getPlanes();
+    for(std::size_t i = 0, end = variant + 2 ; i < end ; ++i)
+    {
+        testPlane(planes.at(i), variant + i);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::ProcessObject::csptr& expectedProcessObject(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::ProcessObject::New();
+
+            tmp->setInputValue(data::Boolean::classname(), newBoolean(variant));
+            tmp->setInputValue(data::Integer::classname(), newInteger(variant));
+
+            tmp->setOutputValue(data::Float::classname(), newFloat(variant));
+            tmp->setOutputValue(data::String::classname(), newString(variant));
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::ProcessObject::csptr> processobjects;
+    const auto& it = processobjects.find(variant);
+
+    if(it == processobjects.cend())
+    {
+        return processobjects.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::ProcessObject::sptr newProcessObject(const std::size_t variant = 0)
+{
+    const auto& processobject = data::ProcessObject::New();
+    processobject->deepCopy(expectedProcessObject(variant));
+    return processobject;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testProcessObject(const data::ProcessObject::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    testBoolean(actual->getInput<const data::Boolean>(data::Boolean::classname()), variant);
+    testInteger(actual->getInput<data::Integer>(data::Integer::classname()), variant);
+
+    testFloat(actual->getOutput<data::Float>(data::Float::classname()), variant);
+    testString(actual->getOutput<data::String>(data::String::classname()), variant);
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::Reconstruction::csptr& expectedReconstruction(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::Reconstruction::New();
+
+            tmp->setIsVisible(variant % 2 == 0);
+            tmp->setOrganName(UUID::generateUUID());
+            tmp->setStructureType(UUID::generateUUID());
+            tmp->setComputedMaskVolume(666.66 + static_cast<double>(variant));
+
+            tmp->setMaterial(newMaterial(variant));
+
+            // Image
+            tmp->setImage(newImage(variant));
+
+            // Mesh
+            tmp->setMesh(newMesh(variant));
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::Reconstruction::csptr> reconstructions;
+    const auto& it = reconstructions.find(variant);
+
+    if(it == reconstructions.cend())
+    {
+        return reconstructions.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::Reconstruction::sptr newReconstruction(const std::size_t variant = 0)
+{
+    const auto& reconstruction = data::Reconstruction::New();
+    reconstruction->deepCopy(expectedReconstruction(variant));
+    return reconstruction;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testReconstruction(const data::Reconstruction::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedReconstruction(variant);
+
+    CPPUNIT_ASSERT_EQUAL(expected->getIsVisible(), actual->getIsVisible());
+    CPPUNIT_ASSERT_EQUAL(expected->getOrganName(), actual->getOrganName());
+    CPPUNIT_ASSERT_EQUAL(expected->getStructureType(), actual->getStructureType());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(
+        expected->getComputedMaskVolume(),
+        actual->getComputedMaskVolume(),
+        DOUBLE_EPSILON
+    );
+
+    testMaterial(actual->getMaterial(), variant);
+
+    // Image
+    testImage(actual->getImage(), variant);
+
+    // Mesh
+    testMesh(actual->getMesh(), variant);
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::StructureTraits::csptr& expectedStructureTraits(const std::size_t variant = 0)
+{
+    data::StructureTraits::StructureClass structureClass[] = {
+        data::StructureTraits::StructureClass::ENVIRONMENT,
+        data::StructureTraits::StructureClass::FUNCTIONAL,
+        data::StructureTraits::StructureClass::LESION,
+        data::StructureTraits::StructureClass::NO_CONSTRAINT,
+        data::StructureTraits::StructureClass::ORGAN,
+        data::StructureTraits::StructureClass::TOOL,
+        data::StructureTraits::StructureClass::VESSEL
+    };
+
+    data::StructureTraits::Category category[] = {
+        data::StructureTraits::Category::ABDOMEN,
+        data::StructureTraits::Category::ARM,
+        data::StructureTraits::Category::BODY,
+        data::StructureTraits::Category::HEAD,
+        data::StructureTraits::Category::LEG,
+        data::StructureTraits::Category::LIVER_SEGMENTS,
+        data::StructureTraits::Category::NECK,
+        data::StructureTraits::Category::OTHER,
+        data::StructureTraits::Category::PELVIS,
+        data::StructureTraits::Category::THORAX
+    };
+
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::StructureTraits::New();
+
+            tmp->setType(UUID::generateUUID());
+            tmp->setClass(structureClass[variant % std::size(structureClass)]);
+            tmp->setNativeExp(UUID::generateUUID());
+            tmp->setNativeGeometricExp(UUID::generateUUID());
+            tmp->setAttachmentType(UUID::generateUUID());
+            tmp->setAnatomicRegion(UUID::generateUUID());
+            tmp->setPropertyCategory(UUID::generateUUID());
+            tmp->setPropertyType(UUID::generateUUID());
+
+            // Categories
+            auto& categories = tmp->getCategories();
+            for(std::size_t i = 0, end = variant + 2 ; i < end ; ++i)
+            {
+                categories.push_back(category[(i + variant) % std::size(category)]);
+            }
+
+            // Color
+            tmp->setColor(newColor(variant));
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::StructureTraits::csptr> structureTraits;
+    const auto& it = structureTraits.find(variant);
+
+    if(it == structureTraits.cend())
+    {
+        return structureTraits.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::StructureTraits::sptr newStructureTraits(const std::size_t variant = 0)
+{
+    const auto& structuretraits = data::StructureTraits::New();
+    structuretraits->deepCopy(expectedStructureTraits(variant));
+    return structuretraits;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testStructureTraits(const data::StructureTraits::csptr& actual, const std::size_t variant = 0)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedStructureTraits(variant);
+
+    CPPUNIT_ASSERT_EQUAL(expected->getType(), actual->getType());
+    CPPUNIT_ASSERT_EQUAL(expected->getClass(), actual->getClass());
+    CPPUNIT_ASSERT_EQUAL(expected->getNativeExp(), actual->getNativeExp());
+    CPPUNIT_ASSERT_EQUAL(expected->getNativeGeometricExp(), actual->getNativeGeometricExp());
+    CPPUNIT_ASSERT_EQUAL(expected->getAttachmentType(), actual->getAttachmentType());
+    CPPUNIT_ASSERT_EQUAL(expected->getAnatomicRegion(), actual->getAnatomicRegion());
+    CPPUNIT_ASSERT_EQUAL(expected->getPropertyCategory(), actual->getPropertyCategory());
+    CPPUNIT_ASSERT_EQUAL(expected->getPropertyType(), actual->getPropertyType());
+
+    // Categories
+    const auto& expectedCategories = expected->getCategories();
+    const auto& actualCategories   = actual->getCategories();
+    CPPUNIT_ASSERT_EQUAL(expectedCategories.size(), actualCategories.size());
+
+    for(std::size_t i = 0, end = expectedCategories.size() ; i < end ; ++i)
+    {
+        CPPUNIT_ASSERT_EQUAL(expectedCategories[i], actualCategories[i]);
+    }
+
+    // Color
+    testColor(actual->getColor(), variant);
+}
+
+//------------------------------------------------------------------------------
+
+inline static const data::ReconstructionTraits::csptr& expectedReconstructionTraits(const std::size_t variant = 0)
+{
+    const auto& generator =
+        [&]
+        {
+            auto tmp = data::ReconstructionTraits::New();
+
+            tmp->setIdentifier(UUID::generateUUID());
+
+            // Reconstruction mask operator node
+            tmp->setMaskOpNode(newNode(variant));
+
+            // Reconstruction mesh operator node
+            tmp->setMeshOpNode(newNode(variant + 1));
+
+            // Associated structure traits
+            tmp->setStructureTraits(newStructureTraits(variant));
+
+            return tmp;
+        };
+
+    static std::map<std::size_t, data::ReconstructionTraits::csptr> reconstructionTraits;
+    const auto& it = reconstructionTraits.find(variant);
+
+    if(it == reconstructionTraits.cend())
+    {
+        return reconstructionTraits.insert_or_assign(variant, generator()).first->second;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline static data::ReconstructionTraits::sptr newReconstructionTraits(const std::size_t variant = 0)
+{
+    const auto& reconstructionTraits = data::ReconstructionTraits::New();
+    reconstructionTraits->deepCopy(expectedReconstructionTraits(variant));
+    return reconstructionTraits;
+}
+
+//------------------------------------------------------------------------------
+
+inline static void testReconstructionTraits(
+    const data::ReconstructionTraits::csptr& actual,
+    const std::size_t variant = 0
+)
+{
+    CPPUNIT_ASSERT(actual);
+
+    const auto& expected = expectedReconstructionTraits(variant);
+
+    CPPUNIT_ASSERT_EQUAL(expected->getIdentifier(), actual->getIdentifier());
+
+    // Reconstruction mask operator node
+    testNode(actual->getMaskOpNode(), variant);
+
+    // Reconstruction mesh operator node
+    testNode(actual->getMeshOpNode(), variant + 1);
+
+    // Associated structure traits
+    testStructureTraits(actual->getStructureTraits(), variant);
+}
 
 //------------------------------------------------------------------------------
 
@@ -115,24 +2548,22 @@ void SessionTest::booleanTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "booleanTest.zip";
 
-    const bool right = true;
-    const bool wrong = false;
     const std::string fieldName(UUID::generateUUID());
 
     // Test serialization
     {
         // Create the data::Boolean
-        auto rightData = data::Boolean::New(right);
+        auto boolean = newBoolean();
 
         // Add a field
-        rightData->setField(fieldName, data::Boolean::New(wrong));
+        boolean->setField(fieldName, newBoolean(1));
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
         CPPUNIT_ASSERT(sessionWriter);
 
         // Configure the session
-        sessionWriter->setObject(rightData);
+        sessionWriter->setObject(boolean);
         sessionWriter->setFile(testPath);
         sessionWriter->write();
 
@@ -147,14 +2578,12 @@ void SessionTest::booleanTest()
         sessionReader->read();
 
         // Test value
-        const auto& rightData = data::Boolean::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(rightData);
-        CPPUNIT_ASSERT_EQUAL(right, rightData->getValue());
+        const auto& boolean = data::Boolean::dynamicCast(sessionReader->getObject());
+        testBoolean(boolean);
 
         // Test field
-        const auto& fieldData = data::Boolean::dynamicCast(rightData->getField(fieldName));
-        CPPUNIT_ASSERT(fieldData);
-        CPPUNIT_ASSERT_EQUAL(wrong, fieldData->getValue());
+        const auto& boolean2 = data::Boolean::dynamicCast(boolean->getField(fieldName));
+        testBoolean(boolean2, 1);
     }
 }
 
@@ -167,24 +2596,22 @@ void SessionTest::integerTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "integerTest.zip";
 
-    const std::int64_t answer = 42;
-    const std::int64_t satan  = 666;
     const std::string fieldName(UUID::generateUUID());
 
     // Test serialization
     {
         // Create the data::Integer
-        auto answerData = data::Integer::New(answer);
+        auto integer = newInteger();
 
         // Add a field
-        answerData->setField(fieldName, data::Integer::New(satan));
+        integer->setField(fieldName, newInteger(1));
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
         CPPUNIT_ASSERT(sessionWriter);
 
         // Configure the session
-        sessionWriter->setObject(answerData);
+        sessionWriter->setObject(integer);
         sessionWriter->setFile(testPath);
         sessionWriter->write();
 
@@ -199,14 +2626,12 @@ void SessionTest::integerTest()
         sessionReader->read();
 
         // Test value
-        const auto& answerData = data::Integer::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(answerData);
-        CPPUNIT_ASSERT_EQUAL(answer, answerData->getValue());
+        const auto& integer = data::Integer::dynamicCast(sessionReader->getObject());
+        testInteger(integer);
 
         // Test field
-        const auto& fieldData = data::Integer::dynamicCast(answerData->getField(fieldName));
-        CPPUNIT_ASSERT(fieldData);
-        CPPUNIT_ASSERT_EQUAL(satan, fieldData->getValue());
+        const auto& integer2 = data::Integer::dynamicCast(integer->getField(fieldName));
+        testInteger(integer2, 1);
     }
 }
 
@@ -219,24 +2644,22 @@ void SessionTest::floatTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "floatTest.zip";
 
-    const float pi     = 3.141592653589793F;
-    const float planck = 6.62607015E-10F;
     const std::string fieldName(UUID::generateUUID());
 
     // Test serialization
     {
         // Create the data::Float
-        auto piData = data::Float::New(pi);
+        auto real = newFloat();
 
         // Add a field
-        piData->setField(fieldName, data::Float::New(planck));
+        real->setField(fieldName, newFloat(1));
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
         CPPUNIT_ASSERT(sessionWriter);
 
         // Configure the session
-        sessionWriter->setObject(piData);
+        sessionWriter->setObject(real);
         sessionWriter->setFile(testPath);
         sessionWriter->write();
 
@@ -251,14 +2674,12 @@ void SessionTest::floatTest()
         sessionReader->read();
 
         // Test value
-        const auto& piData = data::Float::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(piData);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(pi, piData->getValue(), FLOAT_EPSILON);
+        const auto& real = data::Float::dynamicCast(sessionReader->getObject());
+        testFloat(real);
 
         // Test field
-        const auto& fieldData = data::Float::dynamicCast(piData->getField(fieldName));
-        CPPUNIT_ASSERT(fieldData);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(planck, fieldData->getValue(), FLOAT_EPSILON);
+        const auto& real2 = data::Float::dynamicCast(real->getField(fieldName));
+        testFloat(real2, 1);
     }
 }
 
@@ -271,26 +2692,21 @@ void SessionTest::stringTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "stringTest.zip";
 
-    // Create the data::String
-    const std::string verlaine(UUID::generateUUID());
-    const core::crypto::secure_string verlaine_suite(UUID::generateUUID());
-    const core::crypto::secure_string password(UUID::generateUUID());
     const std::string fieldName(UUID::generateUUID());
 
     // Test serialization
     {
-        const auto& verlaineData = data::String::New(verlaine);
+        const auto& string = newString();
 
         // Add a String field with a pure binary string (encrypted text)
-        const auto& secret = core::crypto::encrypt(verlaine_suite, password);
-        verlaineData->setField(fieldName, data::String::New(std::string(secret)));
+        string->setField(fieldName, newString(1));
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
         CPPUNIT_ASSERT(sessionWriter);
 
         // Configure the session writer
-        sessionWriter->setObject(verlaineData);
+        sessionWriter->setObject(string);
         sessionWriter->setFile(testPath);
         sessionWriter->write();
 
@@ -305,63 +2721,12 @@ void SessionTest::stringTest()
         sessionReader->read();
 
         // Test value
-        const auto& verlaineData = data::String::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(verlaineData);
-        CPPUNIT_ASSERT_EQUAL(verlaine, verlaineData->getValue());
+        const auto& string = data::String::dynamicCast(sessionReader->getObject());
+        testString(string);
 
         // Test field
-        const auto& fieldData = data::String::dynamicCast(verlaineData->getField(fieldName));
-        CPPUNIT_ASSERT(fieldData);
-        const auto& decrypted = core::crypto::decrypt(core::crypto::secure_string(fieldData->getValue()), password);
-        CPPUNIT_ASSERT_EQUAL(verlaine_suite, decrypted);
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void SessionTest::circularTest()
-{
-    // Create a temporary directory
-    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
-    std::filesystem::create_directories(tmpfolder);
-    const std::filesystem::path testPath = tmpfolder / "circularTest.zip";
-
-    const std::string inception(UUID::generateUUID());
-
-    // Test serialization
-    {
-        // Introduce a circular reference
-        auto inceptionData = data::String::New(inception);
-        inceptionData->setField(inception, inceptionData);
-
-        // Create the session writer
-        auto sessionWriter = io::session::SessionWriter::New();
-        CPPUNIT_ASSERT(sessionWriter);
-
-        // Configure the session writer
-        sessionWriter->setObject(inceptionData);
-        sessionWriter->setFile(testPath);
-        sessionWriter->write();
-
-        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
-    }
-
-    // Test deserialization
-    {
-        auto sessionReader = io::session::SessionReader::New();
-        CPPUNIT_ASSERT(sessionReader);
-        sessionReader->setFile(testPath);
-        sessionReader->read();
-
-        // Test value
-        const auto& inceptionData = data::String::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(inceptionData);
-        CPPUNIT_ASSERT_EQUAL(inception, inceptionData->getValue());
-
-        // Test field
-        const auto& fieldData = data::String::dynamicCast(inceptionData->getField(inception));
-        CPPUNIT_ASSERT(fieldData);
-        CPPUNIT_ASSERT_EQUAL(inception, fieldData->getValue());
+        const auto& string2 = data::String::dynamicCast(string->getField(fieldName));
+        testString(string2, 1);
     }
 }
 
@@ -374,20 +2739,10 @@ void SessionTest::compositeTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "compositeTest.zip";
 
-    const std::string stringValue(UUID::generateUUID());
-    const std::int64_t integerValue = 42;
-    const bool booleanValue         = true;
-    const float floatValue          = 3.141592653589793F;
-
     // Test serialization
     {
         // Create composite
-        auto composite = data::Composite::New();
-        (*composite)[data::String::classname()]    = data::String::New(stringValue);
-        (*composite)[data::Integer::classname()]   = data::Integer::New(integerValue);
-        (*composite)[data::Boolean::classname()]   = data::Boolean::New(booleanValue);
-        (*composite)[data::Float::classname()]     = data::Float::New(floatValue);
-        (*composite)[data::Composite::classname()] = composite;
+        auto composite = newComposite();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -409,30 +2764,7 @@ void SessionTest::compositeTest()
         sessionReader->read();
 
         // Test value
-        const auto& composite = data::Composite::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(composite);
-
-        const auto& stringData = data::String::dynamicCast((*composite)[data::String::classname()]);
-        CPPUNIT_ASSERT(stringData);
-        CPPUNIT_ASSERT_EQUAL(stringValue, stringData->getValue());
-
-        const auto& integerData = data::Integer::dynamicCast((*composite)[data::Integer::classname()]);
-        CPPUNIT_ASSERT(integerData);
-        CPPUNIT_ASSERT_EQUAL(integerValue, integerData->getValue());
-
-        const auto& booleanData = data::Boolean::dynamicCast((*composite)[data::Boolean::classname()]);
-        CPPUNIT_ASSERT(booleanData);
-        CPPUNIT_ASSERT_EQUAL(booleanValue, booleanData->getValue());
-
-        const auto& floatData = data::Float::dynamicCast((*composite)[data::Float::classname()]);
-        CPPUNIT_ASSERT(floatData);
-        CPPUNIT_ASSERT_EQUAL(floatValue, floatData->getValue());
-
-        const auto& compositeData = data::Composite::dynamicCast((*composite)[data::Composite::classname()]);
-        CPPUNIT_ASSERT(compositeData);
-        const auto& compositeStringData = data::String::dynamicCast((*compositeData)[data::String::classname()]);
-        CPPUNIT_ASSERT(compositeStringData);
-        CPPUNIT_ASSERT_EQUAL(stringValue, compositeStringData->getValue());
+        testComposite(data::Composite::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -445,21 +2777,9 @@ void SessionTest::meshTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "meshTest.zip";
 
-    // Create a test mesh
-    const auto& originalMesh = data::Mesh::New();
-    utestData::generator::Mesh::generateTriangleQuadMesh(originalMesh);
-    geometry::data::Mesh::shakePoint(originalMesh);
-    geometry::data::Mesh::colorizeMeshPoints(originalMesh);
-    geometry::data::Mesh::colorizeMeshCells(originalMesh);
-    geometry::data::Mesh::generatePointNormals(originalMesh);
-    geometry::data::Mesh::generateCellNormals(originalMesh);
-    originalMesh->adjustAllocatedMemory();
-
     // Test serialization
     {
-        const auto& mesh = data::Mesh::New();
-        mesh->deepCopy(originalMesh);
-        mesh->adjustAllocatedMemory();
+        const auto& mesh = newMesh();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -481,45 +2801,7 @@ void SessionTest::meshTest()
         sessionReader->read();
 
         // Test values
-        const auto& mesh = data::Mesh::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(mesh);
-
-        CPPUNIT_ASSERT_EQUAL(originalMesh->getAttributes(), mesh->getAttributes());
-        CPPUNIT_ASSERT_EQUAL(originalMesh->getNumberOfCells(), mesh->getNumberOfCells());
-        CPPUNIT_ASSERT_EQUAL(originalMesh->getNumberOfPoints(), mesh->getNumberOfPoints());
-        CPPUNIT_ASSERT_EQUAL(originalMesh->getCellDataSize(), mesh->getCellDataSize());
-        CPPUNIT_ASSERT_EQUAL(originalMesh->getDataSizeInBytes(), mesh->getDataSizeInBytes());
-
-        auto originalLock       = originalMesh->lock();
-        auto originalIt         = originalMesh->begin<data::iterator::PointIterator>();
-        const auto& originalEnd = originalMesh->end<data::iterator::PointIterator>();
-
-        auto meshLock       = mesh->lock();
-        auto meshIt         = mesh->begin<data::iterator::PointIterator>();
-        const auto& meshEnd = mesh->end<data::iterator::PointIterator>();
-
-        for( ; originalIt != originalEnd && meshIt != meshEnd ; ++originalIt, ++meshIt)
-        {
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalIt->point->x, meshIt->point->x, FLOAT_EPSILON);
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalIt->point->y, meshIt->point->y, FLOAT_EPSILON);
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalIt->point->z, meshIt->point->z, FLOAT_EPSILON);
-
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(
-                originalIt->normal->nx,
-                meshIt->normal->nx,
-                FLOAT_EPSILON
-            );
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(
-                originalIt->normal->ny,
-                meshIt->normal->ny,
-                FLOAT_EPSILON
-            );
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(
-                originalIt->normal->nz,
-                meshIt->normal->nz,
-                FLOAT_EPSILON
-            );
-        }
+        testMesh(data::Mesh::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -536,8 +2818,7 @@ void SessionTest::equipmentTest()
 
     // Test serialization
     {
-        const auto& equipment = data::Equipment::New();
-        equipment->setInstitutionName(institutionName);
+        const auto& equipment = newEquipment();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -559,10 +2840,7 @@ void SessionTest::equipmentTest()
         sessionReader->read();
 
         // Test values
-        const auto& equipment = data::Equipment::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(equipment);
-
-        CPPUNIT_ASSERT_EQUAL(institutionName, equipment->getInstitutionName());
+        testEquipment(data::Equipment::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -575,18 +2853,9 @@ void SessionTest::patientTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "patientTest.zip";
 
-    const std::string name(UUID::generateUUID());
-    const std::string patientId(UUID::generateUUID());
-    const std::string birthdate(UUID::generateUUID());
-    const std::string sex(UUID::generateUUID());
-
     // Test serialization
     {
-        const auto& patient = data::Patient::New();
-        patient->setName(name);
-        patient->setPatientId(patientId);
-        patient->setBirthdate(birthdate);
-        patient->setSex(sex);
+        const auto& patient = newPatient();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -608,13 +2877,7 @@ void SessionTest::patientTest()
         sessionReader->read();
 
         // Test values
-        const auto& patient = data::Patient::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(patient);
-
-        CPPUNIT_ASSERT_EQUAL(name, patient->getName());
-        CPPUNIT_ASSERT_EQUAL(patientId, patient->getPatientId());
-        CPPUNIT_ASSERT_EQUAL(birthdate, patient->getBirthdate());
-        CPPUNIT_ASSERT_EQUAL(sex, patient->getSex());
+        testPatient(data::Patient::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -627,33 +2890,9 @@ void SessionTest::studyTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "studyTest.zip";
 
-    const std::string instanceUID(UUID::generateUUID());
-    const std::string studyID(UUID::generateUUID());
-    const std::string date(UUID::generateUUID());
-    const std::string time(UUID::generateUUID());
-    const std::string referringPhysicianName(UUID::generateUUID());
-    const std::string consultingPhysicianName(UUID::generateUUID());
-    const std::string description(UUID::generateUUID());
-    const std::string patientAge(UUID::generateUUID());
-    const std::string patientSize(UUID::generateUUID());
-    const std::string patientWeight(UUID::generateUUID());
-    const std::string patientBodyMassIndex(UUID::generateUUID());
-
     // Test serialization
     {
-        const auto& study = data::Study::New();
-
-        study->setInstanceUID(instanceUID);
-        study->setStudyID(studyID);
-        study->setDate(date);
-        study->setTime(time);
-        study->setReferringPhysicianName(referringPhysicianName);
-        study->setConsultingPhysicianName(consultingPhysicianName);
-        study->setDescription(description);
-        study->setPatientAge(patientAge);
-        study->setPatientSize(patientSize);
-        study->setPatientWeight(patientWeight);
-        study->setPatientBodyMassIndex(patientBodyMassIndex);
+        const auto& study = newStudy();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -675,20 +2914,7 @@ void SessionTest::studyTest()
         sessionReader->read();
 
         // Test values
-        const auto& study = data::Study::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(study);
-
-        CPPUNIT_ASSERT_EQUAL(instanceUID, study->getInstanceUID());
-        CPPUNIT_ASSERT_EQUAL(studyID, study->getStudyID());
-        CPPUNIT_ASSERT_EQUAL(date, study->getDate());
-        CPPUNIT_ASSERT_EQUAL(time, study->getTime());
-        CPPUNIT_ASSERT_EQUAL(referringPhysicianName, study->getReferringPhysicianName());
-        CPPUNIT_ASSERT_EQUAL(consultingPhysicianName, study->getConsultingPhysicianName());
-        CPPUNIT_ASSERT_EQUAL(description, study->getDescription());
-        CPPUNIT_ASSERT_EQUAL(patientAge, study->getPatientAge());
-        CPPUNIT_ASSERT_EQUAL(patientSize, study->getPatientSize());
-        CPPUNIT_ASSERT_EQUAL(patientWeight, study->getPatientWeight());
-        CPPUNIT_ASSERT_EQUAL(patientBodyMassIndex, study->getPatientBodyMassIndex());
+        testStudy(data::Study::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -701,102 +2927,9 @@ void SessionTest::seriesTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "seriesTest.zip";
 
-    /// Test vector
-    const std::string name(UUID::generateUUID());
-    const std::string patientId(UUID::generateUUID());
-    const std::string birthdate(UUID::generateUUID());
-    const std::string sex(UUID::generateUUID());
-
-    const auto& patient = data::Patient::New();
-    patient->setName(name);
-    patient->setPatientId(patientId);
-    patient->setBirthdate(birthdate);
-    patient->setSex(sex);
-
-    const std::string instanceUID(UUID::generateUUID());
-    const std::string studyID(UUID::generateUUID());
-    const std::string date(UUID::generateUUID());
-    const std::string time(UUID::generateUUID());
-    const std::string referringPhysicianName(UUID::generateUUID());
-    const std::string consultingPhysicianName(UUID::generateUUID());
-    const std::string description(UUID::generateUUID());
-    const std::string patientAge(UUID::generateUUID());
-    const std::string patientSize(UUID::generateUUID());
-    const std::string patientWeight(UUID::generateUUID());
-    const std::string patientBodyMassIndex(UUID::generateUUID());
-
-    const auto& study = data::Study::New();
-    study->setInstanceUID(instanceUID);
-    study->setStudyID(studyID);
-    study->setDate(date);
-    study->setTime(time);
-    study->setReferringPhysicianName(referringPhysicianName);
-    study->setConsultingPhysicianName(consultingPhysicianName);
-    study->setDescription(description);
-    study->setPatientAge(patientAge);
-    study->setPatientSize(patientSize);
-    study->setPatientWeight(patientWeight);
-    study->setPatientBodyMassIndex(patientBodyMassIndex);
-
-    const std::string institutionName(UUID::generateUUID());
-
-    const auto& equipment = data::Equipment::New();
-    equipment->setInstitutionName(institutionName);
-
-    const std::string modality(UUID::generateUUID());
-    const std::string number(UUID::generateUUID());
-    const std::string laterality(UUID::generateUUID());
-    const std::vector<std::string> performingPhysiciansName =
-    {UUID::generateUUID(), UUID::generateUUID(), UUID::generateUUID()};
-    const std::string protocolName(UUID::generateUUID());
-    const std::string bodyPartExamined(UUID::generateUUID());
-    const std::string patientPosition(UUID::generateUUID());
-    const std::string anatomicalOrientationType(UUID::generateUUID());
-    const std::string performdedProcedureStepID(UUID::generateUUID());
-    const std::string performedProcedureStepStartDate(UUID::generateUUID());
-    const std::string performedProcedureStepStartTime(UUID::generateUUID());
-    const std::string performedProcedureStepEndDate(UUID::generateUUID());
-    const std::string performedProcedureStepEndTime(UUID::generateUUID());
-    const std::string performedProcedureStepDescription(UUID::generateUUID());
-    const std::string performedProcedureComments(UUID::generateUUID());
-
     // Test serialization
     {
-        // Set "child" attributes
-        const auto& seriesPatient = data::Patient::New();
-        seriesPatient->deepCopy(patient);
-
-        const auto& seriesStudy = data::Study::New();
-        seriesStudy->deepCopy(study);
-
-        const auto& seriesEquipment = data::Equipment::New();
-        seriesEquipment->deepCopy(equipment);
-
-        const auto& series = data::Series::New();
-        series->setPatient(seriesPatient);
-        series->setStudy(seriesStudy);
-        series->setEquipment(seriesEquipment);
-
-        // Fill trivial attributes
-        series->setModality(modality);
-        series->setInstanceUID(instanceUID);
-        series->setNumber(number);
-        series->setLaterality(laterality);
-        series->setDate(date);
-        series->setTime(time);
-        series->setPerformingPhysiciansName(performingPhysiciansName);
-        series->setProtocolName(protocolName);
-        series->setDescription(description);
-        series->setBodyPartExamined(bodyPartExamined);
-        series->setPatientPosition(patientPosition);
-        series->setAnatomicalOrientationType(anatomicalOrientationType);
-        series->setPerformedProcedureStepID(performdedProcedureStepID);
-        series->setPerformedProcedureStepStartDate(performedProcedureStepStartDate);
-        series->setPerformedProcedureStepStartTime(performedProcedureStepStartTime);
-        series->setPerformedProcedureStepEndDate(performedProcedureStepEndDate);
-        series->setPerformedProcedureStepEndTime(performedProcedureStepEndTime);
-        series->setPerformedProcedureStepDescription(performedProcedureStepDescription);
-        series->setPerformedProcedureComments(performedProcedureComments);
+        const auto& series = newSeries();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -818,60 +2951,7 @@ void SessionTest::seriesTest()
         sessionReader->read();
 
         // Test values
-        const auto& series = data::Series::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(series);
-
-        // Equipment
-        CPPUNIT_ASSERT_EQUAL(institutionName, series->getEquipment()->getInstitutionName());
-
-        // Study
-        const auto& seriesStudy = series->getStudy();
-        CPPUNIT_ASSERT_EQUAL(instanceUID, seriesStudy->getInstanceUID());
-        CPPUNIT_ASSERT_EQUAL(studyID, seriesStudy->getStudyID());
-        CPPUNIT_ASSERT_EQUAL(date, seriesStudy->getDate());
-        CPPUNIT_ASSERT_EQUAL(time, seriesStudy->getTime());
-        CPPUNIT_ASSERT_EQUAL(referringPhysicianName, seriesStudy->getReferringPhysicianName());
-        CPPUNIT_ASSERT_EQUAL(consultingPhysicianName, seriesStudy->getConsultingPhysicianName());
-        CPPUNIT_ASSERT_EQUAL(description, seriesStudy->getDescription());
-        CPPUNIT_ASSERT_EQUAL(patientAge, seriesStudy->getPatientAge());
-        CPPUNIT_ASSERT_EQUAL(patientSize, seriesStudy->getPatientSize());
-        CPPUNIT_ASSERT_EQUAL(patientWeight, seriesStudy->getPatientWeight());
-        CPPUNIT_ASSERT_EQUAL(patientBodyMassIndex, seriesStudy->getPatientBodyMassIndex());
-
-        // Patient
-        const auto& seriesPatient = series->getPatient();
-        CPPUNIT_ASSERT_EQUAL(name, seriesPatient->getName());
-        CPPUNIT_ASSERT_EQUAL(patientId, seriesPatient->getPatientId());
-        CPPUNIT_ASSERT_EQUAL(birthdate, seriesPatient->getBirthdate());
-        CPPUNIT_ASSERT_EQUAL(sex, seriesPatient->getSex());
-
-        // Trivial attributes
-        CPPUNIT_ASSERT_EQUAL(modality, series->getModality());
-        CPPUNIT_ASSERT_EQUAL(instanceUID, series->getInstanceUID());
-        CPPUNIT_ASSERT_EQUAL(number, series->getNumber());
-        CPPUNIT_ASSERT_EQUAL(laterality, series->getLaterality());
-        CPPUNIT_ASSERT_EQUAL(date, series->getDate());
-        CPPUNIT_ASSERT_EQUAL(time, series->getTime());
-
-        const auto& seriesName = series->getPerformingPhysiciansName();
-
-        for(std::size_t i = 0 ; i < performingPhysiciansName.size() ; ++i)
-        {
-            CPPUNIT_ASSERT_EQUAL(performingPhysiciansName[i], seriesName[i]);
-        }
-
-        CPPUNIT_ASSERT_EQUAL(protocolName, series->getProtocolName());
-        CPPUNIT_ASSERT_EQUAL(description, series->getDescription());
-        CPPUNIT_ASSERT_EQUAL(bodyPartExamined, series->getBodyPartExamined());
-        CPPUNIT_ASSERT_EQUAL(patientPosition, series->getPatientPosition());
-        CPPUNIT_ASSERT_EQUAL(anatomicalOrientationType, series->getAnatomicalOrientationType());
-        CPPUNIT_ASSERT_EQUAL(performdedProcedureStepID, series->getPerformedProcedureStepID());
-        CPPUNIT_ASSERT_EQUAL(performedProcedureStepStartDate, series->getPerformedProcedureStepStartDate());
-        CPPUNIT_ASSERT_EQUAL(performedProcedureStepStartTime, series->getPerformedProcedureStepStartTime());
-        CPPUNIT_ASSERT_EQUAL(performedProcedureStepEndDate, series->getPerformedProcedureStepEndDate());
-        CPPUNIT_ASSERT_EQUAL(performedProcedureStepEndTime, series->getPerformedProcedureStepEndTime());
-        CPPUNIT_ASSERT_EQUAL(performedProcedureStepDescription, series->getPerformedProcedureStepDescription());
-        CPPUNIT_ASSERT_EQUAL(performedProcedureComments, series->getPerformedProcedureComments());
+        testSeries(data::Series::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -884,126 +2964,9 @@ void SessionTest::activitySeriesTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "activitySeriesTest.zip";
 
-    // Test vector
-    const std::string stringValue(UUID::generateUUID());
-    const std::int64_t integerValue = 42;
-    const bool booleanValue         = true;
-    const float floatValue          = 3.141592653589793F;
-
-    // Create composite
-    const auto& composite = data::Composite::New();
-    (*composite)[data::String::classname()]    = data::String::New(stringValue);
-    (*composite)[data::Integer::classname()]   = data::Integer::New(integerValue);
-    (*composite)[data::Boolean::classname()]   = data::Boolean::New(booleanValue);
-    (*composite)[data::Float::classname()]     = data::Float::New(floatValue);
-    (*composite)[data::Composite::classname()] = composite;
-
-    const std::string activityConfigId(UUID::generateUUID());
-
-    const std::string name(UUID::generateUUID());
-    const std::string patientId(UUID::generateUUID());
-    const std::string birthdate(UUID::generateUUID());
-    const std::string sex(UUID::generateUUID());
-
-    const auto& patient = data::Patient::New();
-    patient->setName(name);
-    patient->setPatientId(patientId);
-    patient->setBirthdate(birthdate);
-    patient->setSex(sex);
-
-    const std::string instanceUID(UUID::generateUUID());
-    const std::string studyID(UUID::generateUUID());
-    const std::string date(UUID::generateUUID());
-    const std::string time(UUID::generateUUID());
-    const std::string referringPhysicianName(UUID::generateUUID());
-    const std::string consultingPhysicianName(UUID::generateUUID());
-    const std::string description(UUID::generateUUID());
-    const std::string patientAge(UUID::generateUUID());
-    const std::string patientSize(UUID::generateUUID());
-    const std::string patientWeight(UUID::generateUUID());
-    const std::string patientBodyMassIndex(UUID::generateUUID());
-
-    const auto& study = data::Study::New();
-    study->setInstanceUID(instanceUID);
-    study->setStudyID(studyID);
-    study->setDate(date);
-    study->setTime(time);
-    study->setReferringPhysicianName(referringPhysicianName);
-    study->setConsultingPhysicianName(consultingPhysicianName);
-    study->setDescription(description);
-    study->setPatientAge(patientAge);
-    study->setPatientSize(patientSize);
-    study->setPatientWeight(patientWeight);
-    study->setPatientBodyMassIndex(patientBodyMassIndex);
-
-    const std::string institutionName(UUID::generateUUID());
-
-    const auto& equipment = data::Equipment::New();
-    equipment->setInstitutionName(institutionName);
-
-    const std::string modality(UUID::generateUUID());
-    const std::string number(UUID::generateUUID());
-    const std::string laterality(UUID::generateUUID());
-    const std::vector<std::string> performingPhysiciansName =
-    {UUID::generateUUID(), UUID::generateUUID(), UUID::generateUUID()};
-    const std::string protocolName(UUID::generateUUID());
-    const std::string bodyPartExamined(UUID::generateUUID());
-    const std::string patientPosition(UUID::generateUUID());
-    const std::string anatomicalOrientationType(UUID::generateUUID());
-    const std::string performdedProcedureStepID(UUID::generateUUID());
-    const std::string performedProcedureStepStartDate(UUID::generateUUID());
-    const std::string performedProcedureStepStartTime(UUID::generateUUID());
-    const std::string performedProcedureStepEndDate(UUID::generateUUID());
-    const std::string performedProcedureStepEndTime(UUID::generateUUID());
-    const std::string performedProcedureStepDescription(UUID::generateUUID());
-    const std::string performedProcedureComments(UUID::generateUUID());
-
     // Test serialization
     {
-        const auto& series = data::ActivitySeries::New();
-
-        // Set "child" attributes
-        const auto& seriesComposite = data::Composite::New();
-        seriesComposite->deepCopy(composite);
-
-        // For fun...
-        (*seriesComposite)[data::ActivitySeries::classname()] = series;
-
-        const auto& seriesPatient = data::Patient::New();
-        seriesPatient->deepCopy(patient);
-
-        const auto& seriesStudy = data::Study::New();
-        seriesStudy->deepCopy(study);
-
-        const auto& seriesEquipment = data::Equipment::New();
-        seriesEquipment->deepCopy(equipment);
-
-        series->setPatient(seriesPatient);
-        series->setStudy(seriesStudy);
-        series->setEquipment(seriesEquipment);
-        series->setData(seriesComposite);
-
-        // Fill trivial attributes
-        series->setActivityConfigId(activityConfigId);
-        series->setModality(modality);
-        series->setInstanceUID(instanceUID);
-        series->setNumber(number);
-        series->setLaterality(laterality);
-        series->setDate(date);
-        series->setTime(time);
-        series->setPerformingPhysiciansName(performingPhysiciansName);
-        series->setProtocolName(protocolName);
-        series->setDescription(description);
-        series->setBodyPartExamined(bodyPartExamined);
-        series->setPatientPosition(patientPosition);
-        series->setAnatomicalOrientationType(anatomicalOrientationType);
-        series->setPerformedProcedureStepID(performdedProcedureStepID);
-        series->setPerformedProcedureStepStartDate(performedProcedureStepStartDate);
-        series->setPerformedProcedureStepStartTime(performedProcedureStepStartTime);
-        series->setPerformedProcedureStepEndDate(performedProcedureStepEndDate);
-        series->setPerformedProcedureStepEndTime(performedProcedureStepEndTime);
-        series->setPerformedProcedureStepDescription(performedProcedureStepDescription);
-        series->setPerformedProcedureComments(performedProcedureComments);
+        const auto& series = newActivitySeries();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -1025,93 +2988,7 @@ void SessionTest::activitySeriesTest()
         sessionReader->read();
 
         // Test values
-        const auto& series = data::ActivitySeries::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(series);
-
-        // Composite
-        const auto& seriesComposite = series->getData();
-        CPPUNIT_ASSERT(seriesComposite);
-
-        const auto& stringData = data::String::dynamicCast((*seriesComposite)[data::String::classname()]);
-        CPPUNIT_ASSERT(stringData);
-        CPPUNIT_ASSERT_EQUAL(stringValue, stringData->getValue());
-
-        const auto integerData = data::Integer::dynamicCast((*seriesComposite)[data::Integer::classname()]);
-        CPPUNIT_ASSERT(integerData);
-        CPPUNIT_ASSERT_EQUAL(integerValue, integerData->getValue());
-
-        const auto& booleanData = data::Boolean::dynamicCast((*seriesComposite)[data::Boolean::classname()]);
-        CPPUNIT_ASSERT(booleanData);
-        CPPUNIT_ASSERT_EQUAL(booleanValue, booleanData->getValue());
-
-        const auto& floatData = data::Float::dynamicCast((*seriesComposite)[data::Float::classname()]);
-        CPPUNIT_ASSERT(floatData);
-        CPPUNIT_ASSERT_EQUAL(floatValue, floatData->getValue());
-
-        const auto& compositeData = data::Composite::dynamicCast((*seriesComposite)[data::Composite::classname()]);
-        CPPUNIT_ASSERT(compositeData);
-
-        const auto& compositeStringData = data::String::dynamicCast((*compositeData)[data::String::classname()]);
-        CPPUNIT_ASSERT(compositeStringData);
-        CPPUNIT_ASSERT_EQUAL(stringValue, compositeStringData->getValue());
-
-        // Special circular inclusion test
-        const auto& activitySeriesData =
-            data::ActivitySeries::dynamicCast((*seriesComposite)[data::ActivitySeries::classname()]);
-        CPPUNIT_ASSERT(activitySeriesData);
-        CPPUNIT_ASSERT_EQUAL(activityConfigId, activitySeriesData->getActivityConfigId());
-
-        // Equipment
-        CPPUNIT_ASSERT_EQUAL(institutionName, series->getEquipment()->getInstitutionName());
-
-        // Study
-        const auto& seriesStudy = series->getStudy();
-        CPPUNIT_ASSERT_EQUAL(instanceUID, seriesStudy->getInstanceUID());
-        CPPUNIT_ASSERT_EQUAL(studyID, seriesStudy->getStudyID());
-        CPPUNIT_ASSERT_EQUAL(date, seriesStudy->getDate());
-        CPPUNIT_ASSERT_EQUAL(time, seriesStudy->getTime());
-        CPPUNIT_ASSERT_EQUAL(referringPhysicianName, seriesStudy->getReferringPhysicianName());
-        CPPUNIT_ASSERT_EQUAL(consultingPhysicianName, seriesStudy->getConsultingPhysicianName());
-        CPPUNIT_ASSERT_EQUAL(description, seriesStudy->getDescription());
-        CPPUNIT_ASSERT_EQUAL(patientAge, seriesStudy->getPatientAge());
-        CPPUNIT_ASSERT_EQUAL(patientSize, seriesStudy->getPatientSize());
-        CPPUNIT_ASSERT_EQUAL(patientWeight, seriesStudy->getPatientWeight());
-        CPPUNIT_ASSERT_EQUAL(patientBodyMassIndex, seriesStudy->getPatientBodyMassIndex());
-
-        // Patient
-        const auto& seriesPatient = series->getPatient();
-        CPPUNIT_ASSERT_EQUAL(name, seriesPatient->getName());
-        CPPUNIT_ASSERT_EQUAL(patientId, seriesPatient->getPatientId());
-        CPPUNIT_ASSERT_EQUAL(birthdate, seriesPatient->getBirthdate());
-        CPPUNIT_ASSERT_EQUAL(sex, seriesPatient->getSex());
-
-        // Trivial attributes
-        CPPUNIT_ASSERT_EQUAL(modality, series->getModality());
-        CPPUNIT_ASSERT_EQUAL(instanceUID, series->getInstanceUID());
-        CPPUNIT_ASSERT_EQUAL(number, series->getNumber());
-        CPPUNIT_ASSERT_EQUAL(laterality, series->getLaterality());
-        CPPUNIT_ASSERT_EQUAL(date, series->getDate());
-        CPPUNIT_ASSERT_EQUAL(time, series->getTime());
-
-        const auto& seriesName = series->getPerformingPhysiciansName();
-
-        for(std::size_t i = 0 ; i < performingPhysiciansName.size() ; ++i)
-        {
-            CPPUNIT_ASSERT_EQUAL(performingPhysiciansName[i], seriesName[i]);
-        }
-
-        CPPUNIT_ASSERT_EQUAL(protocolName, series->getProtocolName());
-        CPPUNIT_ASSERT_EQUAL(description, series->getDescription());
-        CPPUNIT_ASSERT_EQUAL(bodyPartExamined, series->getBodyPartExamined());
-        CPPUNIT_ASSERT_EQUAL(patientPosition, series->getPatientPosition());
-        CPPUNIT_ASSERT_EQUAL(anatomicalOrientationType, series->getAnatomicalOrientationType());
-        CPPUNIT_ASSERT_EQUAL(performdedProcedureStepID, series->getPerformedProcedureStepID());
-        CPPUNIT_ASSERT_EQUAL(performedProcedureStepStartDate, series->getPerformedProcedureStepStartDate());
-        CPPUNIT_ASSERT_EQUAL(performedProcedureStepStartTime, series->getPerformedProcedureStepStartTime());
-        CPPUNIT_ASSERT_EQUAL(performedProcedureStepEndDate, series->getPerformedProcedureStepEndDate());
-        CPPUNIT_ASSERT_EQUAL(performedProcedureStepEndTime, series->getPerformedProcedureStepEndTime());
-        CPPUNIT_ASSERT_EQUAL(performedProcedureStepDescription, series->getPerformedProcedureStepDescription());
-        CPPUNIT_ASSERT_EQUAL(performedProcedureComments, series->getPerformedProcedureComments());
+        testActivitySeries(data::ActivitySeries::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -1124,34 +3001,10 @@ void SessionTest::arrayTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "arrayTest.zip";
 
-    // Test vector
-    const std::array<std::array<std::uint8_t, 3>, 4> expectedData = {
-        {
-            {0, 1, 1},
-            {2, 3, 5},
-            {8, 13, 21},
-            {34, 55, 89}
-        }
-    };
-
     // Test serialization
     {
         // Create the array
-        data::Array::sptr array    = data::Array::New();
-        data::Array::SizeType size = {3, 4};
-        array->resize(size, core::tools::Type::s_UINT8, true);
-
-        // Fill
-        data::Array::Iterator<std::uint8_t> it = array->begin<std::uint8_t>();
-
-        for(const auto& row : expectedData)
-        {
-            for(const auto cell : row)
-            {
-                *it = cell;
-                ++it;
-            }
-        }
+        auto array = newArray();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -1173,19 +3026,7 @@ void SessionTest::arrayTest()
         sessionReader->read();
 
         // Test values
-        const auto& array = data::Array::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(array);
-
-        data::Array::Iterator<std::uint8_t> it = array->begin<std::uint8_t>();
-
-        for(const auto& row : expectedData)
-        {
-            for(const auto cell : row)
-            {
-                CPPUNIT_ASSERT_EQUAL(cell, *it);
-                ++it;
-            }
-        }
+        testArray(data::Array::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -1198,57 +3039,10 @@ void SessionTest::imageTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "imageTest.zip";
 
-    // Test vector
-    const auto expectedImage =
-        []
-        {
-            std::array<std::array<std::array<std::array<std::uint8_t, 3>, 4>, 5>, 6> tmp;
-            std::uint8_t index = 0;
-
-            for(auto& x : tmp)
-            {
-                for(auto& y : x)
-                {
-                    for(auto& z : y)
-                    {
-                        for(auto& component : z)
-                        {
-                            component = index++;
-                        }
-                    }
-                }
-            }
-
-            return tmp;
-        }();
-
     // Test serialization
     {
         // Create the image
-        auto image = data::Image::New();
-        {
-            data::mt::locked_ptr<data::Image> imageGuard(image);
-            const core::tools::Type TYPE = core::tools::Type::s_UINT8;
-            const data::Image::Size SIZE = {4, 5, 6};
-
-            image->resize(SIZE, TYPE, data::Image::PixelFormat::RGB);
-
-            auto it = image->begin<data::iterator::RGB>();
-
-            for(auto& x : expectedImage)
-            {
-                for(auto& y : x)
-                {
-                    for(auto& z : y)
-                    {
-                        it->r = z.at(0);
-                        it->g = z.at(1);
-                        it->b = z.at(2);
-                        ++it;
-                    }
-                }
-            }
-        }
+        auto image = newImage();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -1270,24 +3064,7 @@ void SessionTest::imageTest()
         sessionReader->read();
 
         // Test values
-        const auto& image = data::Image::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(image);
-
-        auto it = image->begin<data::iterator::RGB>();
-
-        for(const auto& x : expectedImage)
-        {
-            for(const auto& y : x)
-            {
-                for(const auto& z : y)
-                {
-                    CPPUNIT_ASSERT_EQUAL(z.at(0), it->r);
-                    CPPUNIT_ASSERT_EQUAL(z.at(1), it->g);
-                    CPPUNIT_ASSERT_EQUAL(z.at(2), it->b);
-                    ++it;
-                }
-            }
-        }
+        testImage(data::Image::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -1301,20 +3078,11 @@ void SessionTest::vectorTest()
     const std::filesystem::path testPath = tmpfolder / "vectorTest.zip";
 
     const std::string expectedString(UUID::generateUUID());
-    const std::int64_t expectedInteger = 42;
-    const bool expectedBoolean         = true;
-    const float expectedFloat          = 3.141592653589793F;
 
     // Test serialization
     {
         // Create vector
-        auto vector     = data::Vector::New();
-        auto& container = vector->getContainer();
-        container.push_back(data::String::New(expectedString));
-        container.push_back(data::Integer::New(expectedInteger));
-        container.push_back(data::Boolean::New(expectedBoolean));
-        container.push_back(data::Float::New(expectedFloat));
-        container.push_back(vector);
+        auto vector = newVector();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -1326,10 +3094,6 @@ void SessionTest::vectorTest()
         sessionWriter->write();
 
         CPPUNIT_ASSERT(std::filesystem::exists(testPath));
-
-        // This is needed since we push the vector itself in the container
-        // Otherwise the vector is never destroyed
-        container.clear();
     }
 
     // Test deserialization
@@ -1340,32 +3104,7 @@ void SessionTest::vectorTest()
         sessionReader->read();
 
         // Test value
-        const auto& vector = data::Vector::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(vector);
-
-        const auto& container = vector->getContainer();
-
-        const auto& stringData = data::String::dynamicCast(container[0]);
-        CPPUNIT_ASSERT(stringData);
-        CPPUNIT_ASSERT_EQUAL(expectedString, stringData->getValue());
-
-        const auto& integerData = data::Integer::dynamicCast(container[1]);
-        CPPUNIT_ASSERT(integerData);
-        CPPUNIT_ASSERT_EQUAL(expectedInteger, integerData->getValue());
-
-        const auto& booleanData = data::Boolean::dynamicCast(container[2]);
-        CPPUNIT_ASSERT(booleanData);
-        CPPUNIT_ASSERT_EQUAL(expectedBoolean, booleanData->getValue());
-
-        const auto& floatData = data::Float::dynamicCast(container[3]);
-        CPPUNIT_ASSERT(floatData);
-        CPPUNIT_ASSERT_EQUAL(expectedFloat, floatData->getValue());
-
-        const auto& vectorData = data::Vector::dynamicCast(container[4]);
-        CPPUNIT_ASSERT(vectorData);
-        const auto& vectorStringData = data::String::dynamicCast((*vectorData)[0]);
-        CPPUNIT_ASSERT(vectorStringData);
-        CPPUNIT_ASSERT_EQUAL(expectedString, vectorStringData->getValue());
+        testVector(data::Vector::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -1378,17 +3117,10 @@ void SessionTest::pointTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "pointTest.zip";
 
-    const std::array<double, 3> expectedPoint = {
-        0.111111111111,
-        0.222222222222,
-        0.333333333333
-    };
-
     // Test serialization
     {
         // Create vector
-        auto point = data::Point::New();
-        point->setCoord(expectedPoint);
+        auto point = newPoint();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -1410,13 +3142,7 @@ void SessionTest::pointTest()
         sessionReader->read();
 
         // Test value
-        const auto& point = data::Point::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(point);
-
-        const auto& coords = point->getCoord();
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint[0], coords[0], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint[1], coords[1], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint[2], coords[2], DOUBLE_EPSILON);
+        testPoint(data::Point::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -1429,43 +3155,10 @@ void SessionTest::pointListTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "pointListTest.zip";
 
-    const std::array<double, 3> expectedPoint1 = {
-        0.111111111111,
-        0.222222222222,
-        0.333333333333
-    };
-
-    const std::array<double, 3> expectedPoint2 = {
-        0.444444444444,
-        0.555555555555,
-        0.666666666666
-    };
-
-    const std::array<double, 3> expectedPoint3 = {
-        0.777777777777,
-        0.888888888888,
-        0.999999999999
-    };
-
     // Test serialization
     {
-        // Create vector
-        std::vector<data::Point::sptr> points;
-
-        auto point1 = data::Point::New();
-        point1->setCoord(expectedPoint1);
-        points.push_back(point1);
-
-        auto point2 = data::Point::New();
-        point2->setCoord(expectedPoint2);
-        points.push_back(point2);
-
-        auto point3 = data::Point::New();
-        point3->setCoord(expectedPoint3);
-        points.push_back(point3);
-
-        auto pointList = data::PointList::New();
-        pointList->setPoints(points);
+        // Create Pointlist
+        auto pointList = newPointList();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -1487,27 +3180,7 @@ void SessionTest::pointListTest()
         sessionReader->read();
 
         // Test value
-        const auto& pointList = data::PointList::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(pointList);
-
-        const auto& points  = pointList->getPoints();
-        const auto& point1  = points[0];
-        const auto& coords1 = point1->getCoord();
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint1[0], coords1[0], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint1[1], coords1[1], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint1[2], coords1[2], DOUBLE_EPSILON);
-
-        const auto& point2  = points[1];
-        const auto& coords2 = point2->getCoord();
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint2[0], coords2[0], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint2[1], coords2[1], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint2[2], coords2[2], DOUBLE_EPSILON);
-
-        const auto& point3  = points[2];
-        const auto& coords3 = point3->getCoord();
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint3[0], coords3[0], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint3[1], coords3[1], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint3[2], coords3[2], DOUBLE_EPSILON);
+        testPointList(data::PointList::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -1520,91 +3193,10 @@ void SessionTest::calibrationInfoTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "calibrationInfoTest.zip";
 
-    // Images data
-    const auto expectedImages =
-        []
-        {
-            std::array<std::array<std::array<std::array<std::uint8_t, 3>, 3>, 3>, 3> tmp;
-            std::uint8_t index = 0;
-
-            for(auto& image : tmp)
-            {
-                for(auto& x : image)
-                {
-                    for(auto& y : x)
-                    {
-                        for(auto& component : y)
-                        {
-                            component = index++;
-                        }
-                    }
-                }
-            }
-
-            return tmp;
-        }();
-
-    // PointLists data
-    const auto expectedPointLists =
-        []
-        {
-            std::array<std::array<std::array<double, 3>, 3>, 3> tmp;
-            double pi = 3.141592653589793;
-
-            for(auto& pointList : tmp)
-            {
-                for(auto& point : pointList)
-                {
-                    for(auto& coord : point)
-                    {
-                        coord = pi++;
-                    }
-                }
-            }
-
-            return tmp;
-        }();
-
     // Test serialization
     {
-        auto calibrationInfo = data::CalibrationInfo::New();
-
-        for(std::size_t i = 0 ; i < 3 ; ++i)
-        {
-            // Create the image
-            auto image = data::Image::New();
-            {
-                data::mt::locked_ptr<data::Image> imageGuard(image);
-                const core::tools::Type TYPE = core::tools::Type::s_UINT8;
-                const data::Image::Size SIZE = {3, 3};
-
-                image->resize(SIZE, TYPE, data::Image::PixelFormat::RGB);
-                auto it = image->begin<data::iterator::RGB>();
-
-                for(auto& x : expectedImages[i])
-                {
-                    for(auto& y : x)
-                    {
-                        it->r = y.at(0);
-                        it->g = y.at(1);
-                        it->b = y.at(2);
-                        ++it;
-                    }
-                }
-            }
-
-            auto pointList = data::PointList::New();
-
-            // Create the point list
-            for(auto& pointData : expectedPointLists[i])
-            {
-                auto point = data::Point::New();
-                point->setCoord(pointData);
-                pointList->pushBack(point);
-            }
-
-            calibrationInfo->addRecord(image, pointList);
-        }
+        // Create the CalibrationInfo
+        auto calibrationInfo = newCalibrationInfo();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -1626,36 +3218,7 @@ void SessionTest::calibrationInfoTest()
         sessionReader->read();
 
         // Test value
-        const auto& calibrationInfo = data::CalibrationInfo::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(calibrationInfo);
-
-        for(std::size_t i = 0 ; i < 3 ; ++i)
-        {
-            const auto& image = calibrationInfo->getImage(i);
-            auto it           = image->begin<data::iterator::RGB>();
-
-            for(auto& x : expectedImages[i])
-            {
-                for(auto& y : x)
-                {
-                    CPPUNIT_ASSERT_EQUAL(y.at(0), it->r);
-                    CPPUNIT_ASSERT_EQUAL(y.at(1), it->g);
-                    CPPUNIT_ASSERT_EQUAL(y.at(2), it->b);
-                    ++it;
-                }
-            }
-
-            const auto& pointList = calibrationInfo->getPointList(image);
-            const auto& points    = pointList->getPoints();
-
-            for(std::size_t j = 0 ; j < 3 ; ++j)
-            {
-                const auto& coord = points[j]->getCoord();
-                CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPointLists[i][j][0], coord[0], DOUBLE_EPSILON);
-                CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPointLists[i][j][1], coord[1], DOUBLE_EPSILON);
-                CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPointLists[i][j][2], coord[2], DOUBLE_EPSILON);
-            }
-        }
+        testCalibrationInfo(data::CalibrationInfo::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -1668,54 +3231,9 @@ void SessionTest::cameraTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "cameraTest.zip";
 
-    // Test data
-    const size_t expectedWidth  = 111;
-    const size_t expectedHeight = 222;
-
-    const double expectedFx = 0.0000001;
-    const double expectedFy = 0.0000002;
-    const double expectedCx = 0.0000003;
-    const double expectedCy = 0.0000004;
-
-    const double expectedK1 = 0.0000005;
-    const double expectedK2 = 0.0000006;
-    const double expectedP1 = 0.0000007;
-    const double expectedP2 = 0.0000008;
-    const double expectedK3 = 0.0000009;
-
-    const double expectedSkew       = 0.0000010;
-    const bool expectedIsCalibrated = true;
-
-    const std::string expectedDescription(UUID::generateUUID());
-    const std::string expectedCameraID(UUID::generateUUID());
-    const float expectedMaxFrameRate                    = 666.66F;
-    const data::Camera::PixelFormat expectedPixelFormat = data::Camera::PixelFormat::ARGB8565_PREMULTIPLIED;
-    const std::filesystem::path expectedVideoFile       = "/tmp/superman fait du vélo.mp4";
-    const std::string expectedStreamUrl(UUID::generateUUID());
-    const data::Camera::SourceType expectedCameraSource = data::Camera::SourceType::UNKNOWN;
-    const double expectedScale                          = 0.123456789;
-
     // Test serialization
     {
-        auto camera = data::Camera::New();
-
-        camera->setWidth(expectedWidth);
-        camera->setHeight(expectedHeight);
-        camera->setFx(expectedFx);
-        camera->setFy(expectedFy);
-        camera->setCx(expectedCx);
-        camera->setCy(expectedCy);
-        camera->setDistortionCoefficient(expectedK1, expectedK2, expectedP1, expectedP2, expectedK3);
-        camera->setSkew(expectedSkew);
-        camera->setIsCalibrated(expectedIsCalibrated);
-        camera->setDescription(expectedDescription);
-        camera->setCameraID(expectedCameraID);
-        camera->setMaximumFrameRate(expectedMaxFrameRate);
-        camera->setPixelFormat(expectedPixelFormat);
-        camera->setVideoFile(expectedVideoFile);
-        camera->setStreamUrl(expectedStreamUrl);
-        camera->setCameraSource(expectedCameraSource);
-        camera->setScale(expectedScale);
+        auto camera = newCamera();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -1737,34 +3255,7 @@ void SessionTest::cameraTest()
         sessionReader->read();
 
         // Test value
-        const auto& camera = data::Camera::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(camera);
-
-        CPPUNIT_ASSERT_EQUAL(expectedWidth, camera->getWidth());
-        CPPUNIT_ASSERT_EQUAL(expectedHeight, camera->getHeight());
-
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedFx, camera->getFx(), DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedFy, camera->getFy(), DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedCx, camera->getCx(), DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedCy, camera->getCy(), DOUBLE_EPSILON);
-
-        const auto& distortionCoefficient = camera->getDistortionCoefficient();
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedK1, distortionCoefficient[0], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedK2, distortionCoefficient[1], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedP1, distortionCoefficient[2], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedP2, distortionCoefficient[3], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedK3, distortionCoefficient[4], DOUBLE_EPSILON);
-
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedSkew, camera->getSkew(), DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_EQUAL(expectedIsCalibrated, camera->getIsCalibrated());
-        CPPUNIT_ASSERT_EQUAL(expectedDescription, camera->getDescription());
-        CPPUNIT_ASSERT_EQUAL(expectedCameraID, camera->getCameraID());
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedMaxFrameRate, camera->getMaximumFrameRate(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_EQUAL(expectedPixelFormat, camera->getPixelFormat());
-        CPPUNIT_ASSERT_EQUAL(expectedVideoFile, camera->getVideoFile());
-        CPPUNIT_ASSERT_EQUAL(expectedStreamUrl, camera->getStreamUrl());
-        CPPUNIT_ASSERT_EQUAL(expectedCameraSource, camera->getCameraSource());
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedScale, camera->getScale(), DOUBLE_EPSILON);
+        testCamera(data::Camera::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -1777,23 +3268,9 @@ void SessionTest::cameraSeriesTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "cameraSeriesTest.zip";
 
-    // Test data
-    const std::array<std::string, 3> expectedCameraIDs = {
-        UUID::generateUUID(),
-        UUID::generateUUID(),
-        UUID::generateUUID()
-    };
-
     // Test serialization
     {
-        auto cameraSeries = data::CameraSeries::New();
-
-        for(const auto& expectedCameraID : expectedCameraIDs)
-        {
-            const auto& camera = data::Camera::New();
-            camera->setCameraID(expectedCameraID);
-            cameraSeries->addCamera(camera);
-        }
+        auto cameraSeries = newCameraSeries();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -1815,14 +3292,7 @@ void SessionTest::cameraSeriesTest()
         sessionReader->read();
 
         // Test value
-        const auto& cameraSeries = data::CameraSeries::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(cameraSeries);
-
-        for(size_t i = 0, end = cameraSeries->getNumberOfCameras() ; i < end ; ++i)
-        {
-            const auto& camera = cameraSeries->getCamera(i);
-            CPPUNIT_ASSERT_EQUAL(expectedCameraIDs[i], camera->getCameraID());
-        }
+        testCameraSeries(data::CameraSeries::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -1835,18 +3305,10 @@ void SessionTest::colorTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "colorTest.zip";
 
-    const std::array<float, 4> expectedRGBA = {
-        1.111F,
-        2.222F,
-        3.333F,
-        4.444F
-    };
-
     // Test serialization
     {
         // Create vector
-        auto color = data::Color::New();
-        color->setRGBA(expectedRGBA[0], expectedRGBA[1], expectedRGBA[2], expectedRGBA[3]);
+        auto color = newColor();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -1868,13 +3330,7 @@ void SessionTest::colorTest()
         sessionReader->read();
 
         // Test value
-        const auto& color = data::Color::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(color);
-
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedRGBA[0], color->red(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedRGBA[1], color->green(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedRGBA[2], color->blue(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedRGBA[3], color->alpha(), FLOAT_EPSILON);
+        testColor(data::Color::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -1887,16 +3343,10 @@ void SessionTest::edgeTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "edgeTest.zip";
 
-    const std::string expectedFrom(UUID::generateUUID());
-    const std::string expectedTo(UUID::generateUUID());
-    const std::string expectedNature(UUID::generateUUID());
-
     // Test serialization
     {
         // Create vector
-        auto edge = data::Edge::New();
-        edge->setNature(expectedNature);
-        edge->setIdentifiers(expectedFrom, expectedTo);
+        auto edge = newEdge();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -1918,12 +3368,7 @@ void SessionTest::edgeTest()
         sessionReader->read();
 
         // Test value
-        const auto& edge = data::Edge::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(edge);
-
-        CPPUNIT_ASSERT_EQUAL(expectedFrom, edge->getFromPortID());
-        CPPUNIT_ASSERT_EQUAL(expectedTo, edge->getToPortID());
-        CPPUNIT_ASSERT_EQUAL(expectedNature, edge->getNature());
+        testEdge(data::Edge::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -1942,9 +3387,7 @@ void SessionTest::portTest()
     // Test serialization
     {
         // Create vector
-        auto port = data::Port::New();
-        port->setIdentifier(expectedIdentifier);
-        port->setType(expectedType);
+        auto port = newPort();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -1966,11 +3409,7 @@ void SessionTest::portTest()
         sessionReader->read();
 
         // Test value
-        const auto& port = data::Port::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(port);
-
-        CPPUNIT_ASSERT_EQUAL(expectedIdentifier, port->getIdentifier());
-        CPPUNIT_ASSERT_EQUAL(expectedType, port->getType());
+        testPort(data::Port::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -1983,46 +3422,10 @@ void SessionTest::nodeTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "nodeTest.zip";
 
-    // Test data
-    const std::string expectedString(UUID::generateUUID());
-
-    std::array<std::array<std::string, 2>, 3> expectedInputs = {
-        {
-            {UUID::generateUUID(), UUID::generateUUID()},
-            {UUID::generateUUID(), UUID::generateUUID()},
-            {UUID::generateUUID(), UUID::generateUUID()}
-        }
-    };
-
-    std::array<std::array<std::string, 2>, 3> expectedOutputs = {
-        {
-            {UUID::generateUUID(), UUID::generateUUID()},
-            {UUID::generateUUID(), UUID::generateUUID()},
-            {UUID::generateUUID(), UUID::generateUUID()}
-        }
-    };
-
     // Test serialization
     {
         // Create node
-        auto node = data::Node::New();
-        node->setObject(data::String::New(expectedString));
-
-        for(const auto& input : expectedInputs)
-        {
-            auto inputPort = data::Port::New();
-            inputPort->setIdentifier(input[0]);
-            inputPort->setType(input[1]);
-            node->addInputPort(inputPort);
-        }
-
-        for(const auto& output : expectedOutputs)
-        {
-            auto outputPort = data::Port::New();
-            outputPort->setIdentifier(output[0]);
-            outputPort->setType(output[1]);
-            node->addOutputPort(outputPort);
-        }
+        auto node = newNode();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -2044,30 +3447,7 @@ void SessionTest::nodeTest()
         sessionReader->read();
 
         // Test values
-        const auto& node = data::Node::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(node);
-
-        const auto& stringObject = data::String::dynamicCast(node->getObject());
-        CPPUNIT_ASSERT(stringObject);
-        CPPUNIT_ASSERT_EQUAL(expectedString, stringObject->getValue());
-
-        const auto& inputPorts = node->getInputPorts();
-        CPPUNIT_ASSERT_EQUAL(expectedInputs.size(), inputPorts.size());
-
-        for(size_t index = 0, end = inputPorts.size() ; index < end ; ++index)
-        {
-            CPPUNIT_ASSERT_EQUAL(expectedInputs[index][0], inputPorts[index]->getIdentifier());
-            CPPUNIT_ASSERT_EQUAL(expectedInputs[index][1], inputPorts[index]->getType());
-        }
-
-        const auto& outputPorts = node->getOutputPorts();
-        CPPUNIT_ASSERT_EQUAL(expectedOutputs.size(), outputPorts.size());
-
-        for(size_t index = 0, end = outputPorts.size() ; index < end ; ++index)
-        {
-            CPPUNIT_ASSERT_EQUAL(expectedOutputs[index][0], outputPorts[index]->getIdentifier());
-            CPPUNIT_ASSERT_EQUAL(expectedOutputs[index][1], outputPorts[index]->getType());
-        }
+        testNode(data::Node::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -2080,33 +3460,10 @@ void SessionTest::graphTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "graphTest.zip";
 
-    // Test vector
-    const std::string expectedFrom(UUID::generateUUID());
-    const std::string expectedTo(UUID::generateUUID());
-    const std::string expectedNature(UUID::generateUUID());
-
-    const std::string expectedUpString(UUID::generateUUID());
-    const std::string expectedDownString(UUID::generateUUID());
-
     // Test serialization
     {
-        // Create graph
-        auto upNode = data::Node::New();
-        upNode->setObject(data::String::New(expectedUpString));
-
-        auto downNode = data::Node::New();
-        downNode->setObject(data::String::New(expectedDownString));
-
-        auto edge = data::Edge::New();
-        edge->setNature(expectedNature);
-        edge->setIdentifiers(expectedFrom, expectedTo);
-
-        auto graph = data::Graph::New();
-        graph->addNode(upNode);
-        graph->addNode(downNode);
-        graph->addEdge(edge, upNode, downNode);
-
-        const std::string object(UUID::generateUUID());
+        // Create Graph
+        auto graph = newGraph();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -2128,23 +3485,7 @@ void SessionTest::graphTest()
         sessionReader->read();
 
         // Test values
-        const auto& graph = data::Graph::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(graph);
-
-        for(const auto& connection : graph->getConnections())
-        {
-            CPPUNIT_ASSERT_EQUAL(expectedNature, connection.first->getNature());
-            CPPUNIT_ASSERT_EQUAL(expectedFrom, connection.first->getFromPortID());
-            CPPUNIT_ASSERT_EQUAL(expectedTo, connection.first->getToPortID());
-
-            const auto& upObject = data::String::dynamicCast(connection.second.first->getObject());
-            CPPUNIT_ASSERT(upObject);
-            CPPUNIT_ASSERT_EQUAL(expectedUpString, upObject->getValue());
-
-            const auto& downObject = data::String::dynamicCast(connection.second.second->getObject());
-            CPPUNIT_ASSERT(downObject);
-            CPPUNIT_ASSERT_EQUAL(expectedDownString, downObject->getValue());
-        }
+        testGraph(data::Graph::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -2157,25 +3498,10 @@ void SessionTest::histogramTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "histogramTest.zip";
 
-    // Test vector
-    std::vector<long> expectedValues = {
-        111111,
-        222222,
-        333333
-    };
-
-    const float expectedBinsWidth = 555555.5F;
-    const float expectedMaxValue  = 444444.4F;
-    const float expectedMinValue  = 000000.0F;
-
     // Test serialization
     {
         // Create histogram
-        auto histogram = data::Histogram::New();
-        histogram->setValues(expectedValues);
-        histogram->setBinsWidth(expectedBinsWidth);
-        histogram->setMaxValue(expectedMaxValue);
-        histogram->setMinValue(expectedMinValue);
+        auto histogram = newHistogram();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -2197,18 +3523,7 @@ void SessionTest::histogramTest()
         sessionReader->read();
 
         // Test values
-        const auto& histogram = data::Histogram::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(histogram);
-
-        const auto& histogramValues = histogram->getValues();
-        for(size_t index = 0, end = expectedValues.size() ; index < end ; ++index)
-        {
-            CPPUNIT_ASSERT_EQUAL(expectedValues[index], histogramValues[index]);
-        }
-
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedBinsWidth, histogram->getBinsWidth(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedMaxValue, histogram->getMaxValue(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedMinValue, histogram->getMinValue(), FLOAT_EPSILON);
+        testHistogram(data::Histogram::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -2221,44 +3536,10 @@ void SessionTest::landmarksTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "landmarksTest.zip";
 
-    // Test vector
-    const std::string expectedName(UUID::generateUUID());
-    const std::array<float, 4> expectedColor = {
-        11.111F,
-        22.222F,
-        33.333F,
-        44.444F
-    };
-
-    const float expectedSize                          = 55.555F;
-    const sight::data::Landmarks::Shape expectedShape = sight::data::Landmarks::Shape::CUBE;
-    const bool expectedVisibility                     = false;
-
-    const std::array<const std::array<double, 3>, 3> expectedPoints = {
-        {
-            {0.0, 0.0, 0.0},
-            {1.1, 2.2, 3.3},
-            {4.4, 5.5, 6.6}
-        }
-    };
-
     // Test serialization
     {
         // Create landmarks
-        auto landmarks = data::Landmarks::New();
-
-        landmarks->addGroup(
-            expectedName,
-            expectedColor,
-            expectedSize,
-            expectedShape,
-            expectedVisibility
-        );
-
-        for(const auto& point : expectedPoints)
-        {
-            landmarks->addPoint(expectedName, point);
-        }
+        auto landmarks = newLandmarks();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -2280,36 +3561,7 @@ void SessionTest::landmarksTest()
         sessionReader->read();
 
         // Test values
-        const auto& landmarks = data::Landmarks::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(landmarks);
-
-        // Test name
-        CPPUNIT_ASSERT_NO_THROW(landmarks->getGroup(expectedName));
-        const auto& group = landmarks->getGroup(expectedName);
-
-        // Test color
-        for(size_t i = 0, end = expectedColor.size() ; i < end ; ++i)
-        {
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedColor[i], group.m_color[i], FLOAT_EPSILON);
-        }
-
-        // Test size
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedSize, group.m_size, FLOAT_EPSILON);
-
-        // Test shape
-        CPPUNIT_ASSERT_EQUAL(expectedShape, group.m_shape);
-
-        // Test visibility
-        CPPUNIT_ASSERT_EQUAL(expectedVisibility, group.m_visibility);
-
-        // Test points
-        for(size_t i = 0, end = expectedPoints.size() ; i < end ; ++i)
-        {
-            for(size_t j = 0 ; j < 3 ; ++j)
-            {
-                CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoints[i][j], group.m_points[i][j], DOUBLE_EPSILON);
-            }
-        }
+        testLandmarks(data::Landmarks::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -2322,22 +3574,10 @@ void SessionTest::lineTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "lineTest.zip";
 
-    // Test vector
-    const std::array<double, 3> expectedPosition  = {0.1, 0.2, 0.3};
-    const std::array<double, 3> expectedDirection = {1.1, 2.2, 3.3};
-
     // Test serialization
     {
-        // Create a position, a direction and a line
-        auto positionPoint = data::Point::New();
-        positionPoint->setCoord(expectedPosition);
-
-        auto directionPoint = data::Point::New();
-        directionPoint->setCoord(expectedDirection);
-
-        auto line = data::Line::New();
-        line->setPosition(positionPoint);
-        line->setDirection(directionPoint);
+        // Create a Line
+        auto line = newLine();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -2359,24 +3599,7 @@ void SessionTest::lineTest()
         sessionReader->read();
 
         // Test values
-        const auto& line = data::Line::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(line);
-
-        const auto& positionPoint = line->getPosition();
-        const auto& positionCoord = positionPoint->getCoord();
-
-        for(size_t i = 0, end = expectedPosition.size() ; i < end ; ++i)
-        {
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPosition[i], positionCoord[i], DOUBLE_EPSILON);
-        }
-
-        const auto& directionPoint = line->getDirection();
-        const auto& directionCoord = directionPoint->getCoord();
-
-        for(size_t i = 0, end = expectedDirection.size() ; i < end ; ++i)
-        {
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedDirection[i], directionCoord[i], DOUBLE_EPSILON);
-        }
+        testLine(data::Line::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -2389,21 +3612,10 @@ void SessionTest::listTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "listTest.zip";
 
-    const std::string expectedString(UUID::generateUUID());
-    const std::int64_t expectedInteger = 42;
-    const bool expectedBoolean         = true;
-    const float expectedValue          = 3.141592653589793F;
-
     // Test serialization
     {
         // Create list
-        auto list       = data::List::New();
-        auto& container = list->getContainer();
-        container.push_back(data::String::New(expectedString));
-        container.push_back(data::Integer::New(expectedInteger));
-        container.push_back(data::Boolean::New(expectedBoolean));
-        container.push_back(data::Float::New(expectedValue));
-        container.push_back(list);
+        auto list = newList();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -2415,10 +3627,6 @@ void SessionTest::listTest()
         sessionWriter->write();
 
         CPPUNIT_ASSERT(std::filesystem::exists(testPath));
-
-        // This is needed since we push the list itself in the container
-        // Otherwise the list is never destroyed
-        container.clear();
     }
 
     // Test deserialization
@@ -2429,34 +3637,7 @@ void SessionTest::listTest()
         sessionReader->read();
 
         // Test value
-        const auto& list = data::List::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(list);
-
-        auto it = list->getContainer().cbegin();
-
-        const auto& stringData = data::String::dynamicCast(*it++);
-        CPPUNIT_ASSERT(stringData);
-        CPPUNIT_ASSERT_EQUAL(expectedString, stringData->getValue());
-
-        const auto& integerData = data::Integer::dynamicCast(*it++);
-        CPPUNIT_ASSERT(integerData);
-        CPPUNIT_ASSERT_EQUAL(expectedInteger, integerData->getValue());
-
-        const auto& booleanData = data::Boolean::dynamicCast(*it++);
-        CPPUNIT_ASSERT(booleanData);
-        CPPUNIT_ASSERT_EQUAL(expectedBoolean, booleanData->getValue());
-
-        const auto& floatData = data::Float::dynamicCast(*it++);
-        CPPUNIT_ASSERT(floatData);
-        CPPUNIT_ASSERT_EQUAL(expectedValue, floatData->getValue());
-
-        const auto& listData = data::List::dynamicCast(*it);
-        CPPUNIT_ASSERT(listData);
-
-        auto it2                   = listData->getContainer().cbegin();
-        const auto& listStringData = data::String::dynamicCast(*it2);
-        CPPUNIT_ASSERT(listStringData);
-        CPPUNIT_ASSERT_EQUAL(expectedString, listStringData->getValue());
+        testList(data::List::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -2469,96 +3650,10 @@ void SessionTest::materialTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "materialTest.zip";
 
-    const std::array<float, 4> expectedAmbient = {
-        1.111F,
-        2.222F,
-        3.333F,
-        4.444F
-    };
-
-    const std::array<float, 4> expectedDiffuse = {
-        5.555F,
-        6.666F,
-        7.777F,
-        8.888F
-    };
-
-    const auto expectedDiffuseTexture =
-        []
-        {
-            std::array<std::array<std::array<std::array<std::uint8_t, 3>, 4>, 5>, 6> tmp;
-            std::uint8_t index = 0;
-
-            for(auto& x : tmp)
-            {
-                for(auto& y : x)
-                {
-                    for(auto& z : y)
-                    {
-                        for(auto& component : z)
-                        {
-                            component = index++;
-                        }
-                    }
-                }
-            }
-
-            return tmp;
-        }();
-
-    const data::Material::OptionsType expectedOptions               = data::Material::OptionsType::STANDARD;
-    const data::Material::ShadingType expectedShading               = data::Material::ShadingType::PHONG;
-    const data::Material::RepresentationType expectedRepresentation = data::Material::RepresentationType::EDGE;
-    const data::Material::FilteringType expectedFiltering           = data::Material::FilteringType::LINEAR;
-    const data::Material::WrappingType expectedWrapping             = data::Material::WrappingType::CLAMP;
-
     // Test serialization
     {
         // Create material
-        auto material = data::Material::New();
-
-        // Set ambient color
-        auto ambientColor = data::Color::New();
-        ambientColor->setRGBA(expectedAmbient[0], expectedAmbient[1], expectedAmbient[2], expectedAmbient[3]);
-        material->setAmbient(ambientColor);
-
-        // Set diffuse color
-        auto diffuseColor = data::Color::New();
-        diffuseColor->setRGBA(expectedDiffuse[0], expectedDiffuse[1], expectedDiffuse[2], expectedDiffuse[3]);
-        material->setDiffuse(diffuseColor);
-
-        // Set diffuse texture
-        auto diffuseTextureImage = data::Image::New();
-        {
-            data::mt::locked_ptr<data::Image> imageGuard(diffuseTextureImage);
-            const core::tools::Type TYPE = core::tools::Type::s_UINT8;
-            const data::Image::Size SIZE = {4, 5, 6};
-
-            diffuseTextureImage->resize(SIZE, TYPE, data::Image::PixelFormat::RGB);
-
-            auto it = diffuseTextureImage->begin<data::iterator::RGB>();
-            for(const auto& x : expectedDiffuseTexture)
-            {
-                for(const auto& y : x)
-                {
-                    for(const auto& z : y)
-                    {
-                        it->r = z.at(0);
-                        it->g = z.at(1);
-                        it->b = z.at(2);
-                        ++it;
-                    }
-                }
-            }
-        }
-
-        material->setDiffuseTexture(diffuseTextureImage);
-
-        material->setShadingMode(expectedShading);
-        material->setRepresentationMode(expectedRepresentation);
-        material->setOptionsMode(expectedOptions);
-        material->setDiffuseTextureFiltering(expectedFiltering);
-        material->setDiffuseTextureWrapping(expectedWrapping);
+        auto material = newMaterial();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -2580,51 +3675,7 @@ void SessionTest::materialTest()
         sessionReader->read();
 
         // Test value
-        const auto& material = data::Material::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(material);
-
-        // Test ambient
-        const auto& ambientColor = data::Color::dynamicCast(material->ambient());
-        CPPUNIT_ASSERT(ambientColor);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedAmbient[0], ambientColor->red(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedAmbient[1], ambientColor->green(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedAmbient[2], ambientColor->blue(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedAmbient[3], ambientColor->alpha(), FLOAT_EPSILON);
-
-        // Test diffuse
-        const auto& diffuseColor = data::Color::dynamicCast(material->diffuse());
-        CPPUNIT_ASSERT(diffuseColor);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedDiffuse[0], diffuseColor->red(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedDiffuse[1], diffuseColor->green(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedDiffuse[2], diffuseColor->blue(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedDiffuse[3], diffuseColor->alpha(), FLOAT_EPSILON);
-
-        // Test diffuse texture
-        const auto& diffuseTextureImage = data::Image::dynamicCast(material->getDiffuseTexture());
-        CPPUNIT_ASSERT(diffuseTextureImage);
-
-        auto it = diffuseTextureImage->begin<data::iterator::RGB>();
-
-        for(const auto& x : expectedDiffuseTexture)
-        {
-            for(const auto& y : x)
-            {
-                for(const auto& z : y)
-                {
-                    CPPUNIT_ASSERT_EQUAL(z.at(0), it->r);
-                    CPPUNIT_ASSERT_EQUAL(z.at(1), it->g);
-                    CPPUNIT_ASSERT_EQUAL(z.at(2), it->b);
-                    ++it;
-                }
-            }
-        }
-
-        // Test other attributes
-        CPPUNIT_ASSERT_EQUAL(expectedShading, material->getShadingMode());
-        CPPUNIT_ASSERT_EQUAL(expectedRepresentation, material->getRepresentationMode());
-        CPPUNIT_ASSERT_EQUAL(expectedOptions, material->getOptionsMode());
-        CPPUNIT_ASSERT_EQUAL(expectedFiltering, material->getDiffuseTextureFiltering());
-        CPPUNIT_ASSERT_EQUAL(expectedWrapping, material->getDiffuseTextureWrapping());
+        testMaterial(data::Material::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -2637,30 +3688,15 @@ void SessionTest::matrix4Test()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "matrix4Test.zip";
 
-    const std::array<double, 16> expectedMatrix = {
-        01.10, 02.20, 03.30, 04.40,
-        05.50, 06.60, 07.70, 08.80,
-        09.90, 10.10, 11.11, 12.12,
-        13.13, 14.14, 15.15, 16.16
-    };
-
-    const std::array<double, 16> expectedFieldMatrix = {
-        17.17, 18.18, 19.19, 20.20,
-        21.21, 22.22, 23.23, 24.24,
-        25.25, 26.26, 27.27, 28.28,
-        29.29, 30.30, 31.31, 32.32
-    };
+    const std::string fieldName(UUID::generateUUID());
 
     // Test serialization
     {
         // Create the data::Matrix4
-        auto matrix = data::Matrix4::New();
-        matrix->setCoefficients(expectedMatrix);
+        auto matrix = newMatrix4();
 
-        // Add a field
-        auto fieldMatrix = data::Matrix4::New();
-        fieldMatrix->setCoefficients(expectedFieldMatrix);
-        matrix->setField("fieldMatrix", fieldMatrix);
+        // Test Field
+        matrix->setField(fieldName, newMatrix4(1));
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -2681,25 +3717,12 @@ void SessionTest::matrix4Test()
         sessionReader->setFile(testPath);
         sessionReader->read();
 
-        // Test value
+        // Test Value
         const auto& matrix = data::Matrix4::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(matrix);
+        testMatrix4(matrix);
 
-        const auto& matrixCoefficients = matrix->getCoefficients();
-        for(size_t index = 0, end = matrixCoefficients.size() ; index < end ; ++index)
-        {
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedMatrix[index], matrixCoefficients[index], FLOAT_EPSILON);
-        }
-
-        // Test field
-        const auto& fieldMatrix = data::Matrix4::dynamicCast(matrix->getField("fieldMatrix"));
-        CPPUNIT_ASSERT(fieldMatrix);
-
-        const auto& fieldMatrixCoeffs = fieldMatrix->getCoefficients();
-        for(size_t index = 0, end = fieldMatrixCoeffs.size() ; index < end ; ++index)
-        {
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedFieldMatrix[index], fieldMatrixCoeffs[index], FLOAT_EPSILON);
-        }
+        // Test Field
+        testMatrix4(data::Matrix4::dynamicCast(matrix->getField(fieldName)), 1);
     }
 }
 
@@ -2712,41 +3735,10 @@ void SessionTest::planeTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "planeTest.zip";
 
-    const std::array<double, 3> expectedPlanes1 = {
-        0.111111111111,
-        0.222222222222,
-        0.333333333333
-    };
-
-    const std::array<double, 3> expectedPlanes2 = {
-        0.444444444444,
-        0.555555555555,
-        0.666666666666
-    };
-
-    const std::array<double, 3> expectedPlanes3 = {
-        0.777777777777,
-        0.888888888888,
-        0.999999999999
-    };
-
     // Test serialization
     {
         // Create plane
-        auto plane   = data::Plane::New();
-        auto& points = plane->getPoints();
-
-        auto point1 = data::Point::New();
-        point1->setCoord(expectedPlanes1);
-        points[0] = point1;
-
-        auto point2 = data::Point::New();
-        point2->setCoord(expectedPlanes2);
-        points[1] = point2;
-
-        auto point3 = data::Point::New();
-        point3->setCoord(expectedPlanes3);
-        points[2] = point3;
+        auto plane = newPlane();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -2768,24 +3760,7 @@ void SessionTest::planeTest()
         sessionReader->read();
 
         // Test value
-        const auto& plane = data::Plane::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(plane);
-
-        const auto& points  = plane->getPoints();
-        const auto& coords1 = points[0]->getCoord();
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPlanes1[0], coords1[0], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPlanes1[1], coords1[1], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPlanes1[2], coords1[2], DOUBLE_EPSILON);
-
-        const auto& coords2 = points[1]->getCoord();
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPlanes2[0], coords2[0], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPlanes2[1], coords2[1], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPlanes2[2], coords2[2], DOUBLE_EPSILON);
-
-        const auto& coords3 = points[2]->getCoord();
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPlanes3[0], coords3[0], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPlanes3[1], coords3[1], DOUBLE_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPlanes3[2], coords3[2], DOUBLE_EPSILON);
+        testPlane(data::Plane::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -2798,53 +3773,10 @@ void SessionTest::planeListTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "planeListTest.zip";
 
-    const std::array<std::array<std::array<double, 3>, 3>, 3> expectedPlanes = {
-        {
-            {
-                {
-                    {1.1, 2.2, 3.3},
-                    {4.4, 5.5, 6.6},
-                    {7.7, 8.8, 9.9}
-                }
-            },
-            {
-                {
-                    {0.1, 0.2, 0.3},
-                    {0.4, 0.5, 0.6},
-                    {0.7, 0.8, 0.9}
-                }
-            },
-            {
-                {
-                    {111111111111.0, 222222222222.0, 333333333333.0},
-                    {444444444444.0, 555555555555.0, 666666666666.0},
-                    {777777777777.0, 888888888888.0, 999999999999.0}
-                }
-            }
-        }
-    };
-
     // Test serialization
     {
         // Create plane
-        auto planeList = data::PlaneList::New();
-        auto& planes   = planeList->getPlanes();
-
-        for(size_t planeIndex = 0 ; planeIndex < expectedPlanes.size() ; ++planeIndex)
-        {
-            auto plane   = data::Plane::New();
-            auto& points = plane->getPoints();
-
-            const auto& expectedPoints = expectedPlanes[planeIndex];
-            for(size_t pointIndex = 0 ; pointIndex < expectedPoints.size() ; ++pointIndex)
-            {
-                auto point = data::Point::New();
-                point->setCoord(expectedPoints[pointIndex]);
-                points[pointIndex] = point;
-            }
-
-            planes.push_back(plane);
-        }
+        auto planeList = newPlaneList();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -2866,29 +3798,7 @@ void SessionTest::planeListTest()
         sessionReader->read();
 
         // Test value
-        const auto& planeList = data::PlaneList::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(planeList);
-
-        const auto& planes = planeList->getPlanes();
-        for(size_t planeIndex = 0 ; planeIndex < expectedPlanes.size() ; ++planeIndex)
-        {
-            auto plane   = planes[planeIndex];
-            auto& points = plane->getPoints();
-
-            const auto& expectedPoints = expectedPlanes[planeIndex];
-
-            for(size_t pointIndex = 0 ; pointIndex < expectedPoints.size() ; ++pointIndex)
-            {
-                const auto& point       = points[pointIndex];
-                const auto& pointCoords = point->getCoord();
-
-                const auto& expectedPoint = expectedPoints[pointIndex];
-
-                CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint[0], pointCoords[0], DOUBLE_EPSILON);
-                CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint[1], pointCoords[1], DOUBLE_EPSILON);
-                CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedPoint[2], pointCoords[2], DOUBLE_EPSILON);
-            }
-        }
+        testPlaneList(data::PlaneList::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -2901,20 +3811,10 @@ void SessionTest::processObjectTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "processObjectTest.zip";
 
-    // Test data
-    const std::string expectedString(UUID::generateUUID());
-    const std::int64_t expectedInteger = 42;
-    const bool expectedBoolean         = true;
-    const float expectedFloat          = 3.141592653589793F;
-
     // Test serialization
     {
         // Create processObject
-        auto processObject = data::ProcessObject::New();
-        processObject->setInputValue("String", data::String::New(expectedString));
-        processObject->setInputValue("Integer", data::Integer::New(expectedInteger));
-        processObject->setOutputValue("Boolean", data::Boolean::New(expectedBoolean));
-        processObject->setOutputValue("Float", data::Float::New(expectedFloat));
+        auto processObject = newProcessObject();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -2936,24 +3836,7 @@ void SessionTest::processObjectTest()
         sessionReader->read();
 
         // Test values
-        const auto& processObject = data::ProcessObject::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(processObject);
-
-        const auto& stringObject = processObject->getInput<data::String>("String");
-        CPPUNIT_ASSERT(stringObject);
-        CPPUNIT_ASSERT_EQUAL(expectedString, stringObject->getValue());
-
-        const auto& integerObject = processObject->getInput<data::Integer>("Integer");
-        CPPUNIT_ASSERT(integerObject);
-        CPPUNIT_ASSERT_EQUAL(expectedInteger, integerObject->getValue());
-
-        const auto& booleanObject = processObject->getOutput<data::Boolean>("Boolean");
-        CPPUNIT_ASSERT(booleanObject);
-        CPPUNIT_ASSERT_EQUAL(expectedBoolean, booleanObject->getValue());
-
-        const auto& floatObject = processObject->getOutput<data::Float>("Float");
-        CPPUNIT_ASSERT(floatObject);
-        CPPUNIT_ASSERT_EQUAL(expectedFloat, floatObject->getValue());
+        testProcessObject(data::ProcessObject::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -2966,73 +3849,10 @@ void SessionTest::reconstructionTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "reconstructionTest.zip";
 
-    // Test data
-    const bool expectedIsVisible = false;
-    const std::string expectedOrganName(UUID::generateUUID());
-    const std::string expectedStructureType(UUID::generateUUID());
-    const double expectedComputedMaskVolume = 111111.111;
-
-    const data::Material::OptionsType expectedOptions               = data::Material::OptionsType::STANDARD;
-    const data::Material::ShadingType expectedShading               = data::Material::ShadingType::PHONG;
-    const data::Material::RepresentationType expectedRepresentation = data::Material::RepresentationType::EDGE;
-    const data::Material::FilteringType expectedFiltering           = data::Material::FilteringType::LINEAR;
-    const data::Material::WrappingType expectedWrapping             = data::Material::WrappingType::CLAMP;
-
-    const std::uint8_t r = 11;
-    const std::uint8_t g = 22;
-    const std::uint8_t b = 33;
-
-    // Create a test mesh
-    const auto& originalMesh = data::Mesh::New();
-    utestData::generator::Mesh::generateTriangleQuadMesh(originalMesh);
-    geometry::data::Mesh::shakePoint(originalMesh);
-    geometry::data::Mesh::colorizeMeshPoints(originalMesh);
-    geometry::data::Mesh::colorizeMeshCells(originalMesh);
-    geometry::data::Mesh::generatePointNormals(originalMesh);
-    geometry::data::Mesh::generateCellNormals(originalMesh);
-    originalMesh->adjustAllocatedMemory();
-
     // Test serialization
     {
         // Create reconstruction
-        auto reconstruction = data::Reconstruction::New();
-        reconstruction->setIsVisible(expectedIsVisible);
-        reconstruction->setOrganName(expectedOrganName);
-        reconstruction->setStructureType(expectedStructureType);
-        reconstruction->setComputedMaskVolume(expectedComputedMaskVolume);
-
-        auto material = data::Material::New();
-        material->setOptionsMode(expectedOptions);
-        material->setShadingMode(expectedShading);
-        material->setRepresentationMode(expectedRepresentation);
-        material->setDiffuseTextureFiltering(expectedFiltering);
-        material->setDiffuseTextureWrapping(expectedWrapping);
-        reconstruction->setMaterial(material);
-
-        // Image
-        auto image = data::Image::New();
-        {
-            data::mt::locked_ptr<data::Image> imageGuard(image);
-
-            image->resize({4, 5, 6}, core::tools::Type::s_UINT8, data::Image::PixelFormat::RGB);
-
-            for(auto imageIt = image->begin<data::iterator::RGB>(), imageEnd = image->end<data::iterator::RGB>() ;
-                imageIt != imageEnd ;
-                ++imageIt)
-            {
-                imageIt->r = r;
-                imageIt->g = g;
-                imageIt->b = b;
-            }
-        }
-        reconstruction->setImage(image);
-
-        // Mesh
-        auto mesh = data::Mesh::New();
-        mesh->deepCopy(originalMesh);
-        mesh->adjustAllocatedMemory();
-
-        reconstruction->setMesh(mesh);
+        auto reconstruction = newReconstruction();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -3054,58 +3874,7 @@ void SessionTest::reconstructionTest()
         sessionReader->read();
 
         // Test values
-        const auto& reconstruction = data::Reconstruction::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(reconstruction);
-
-        CPPUNIT_ASSERT_EQUAL(expectedIsVisible, reconstruction->getIsVisible());
-        CPPUNIT_ASSERT_EQUAL(expectedOrganName, reconstruction->getOrganName());
-        CPPUNIT_ASSERT_EQUAL(expectedStructureType, reconstruction->getStructureType());
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(
-            expectedComputedMaskVolume,
-            reconstruction->getComputedMaskVolume(),
-            DOUBLE_EPSILON
-        );
-
-        // Test material
-        const auto& material = reconstruction->getMaterial();
-        CPPUNIT_ASSERT(material);
-
-        CPPUNIT_ASSERT_EQUAL(expectedOptions, material->getOptionsMode());
-        CPPUNIT_ASSERT_EQUAL(expectedShading, material->getShadingMode());
-        CPPUNIT_ASSERT_EQUAL(expectedRepresentation, material->getRepresentationMode());
-        CPPUNIT_ASSERT_EQUAL(expectedFiltering, material->getDiffuseTextureFiltering());
-        CPPUNIT_ASSERT_EQUAL(expectedWrapping, material->getDiffuseTextureWrapping());
-
-        // Test Image
-        const auto& image = reconstruction->getImage();
-        CPPUNIT_ASSERT(image);
-
-        for(auto imageIt = image->begin<data::iterator::RGB>(), imageEnd = image->end<data::iterator::RGB>() ;
-            imageIt != imageEnd ;
-            imageIt++)
-        {
-            CPPUNIT_ASSERT_EQUAL(r, imageIt->r);
-            CPPUNIT_ASSERT_EQUAL(g, imageIt->g);
-            CPPUNIT_ASSERT_EQUAL(b, imageIt->b);
-        }
-
-        // Test Mesh
-        const auto& mesh = reconstruction->getMesh();
-        CPPUNIT_ASSERT(mesh);
-
-        const data::mt::locked_ptr<data::Mesh> originalGuard(originalMesh);
-        const data::mt::locked_ptr<data::Mesh> guard(mesh);
-        for(auto originalMeshIt = originalMesh->begin<data::iterator::PointIterator>(),
-            originalMeshEnd = mesh->end<data::iterator::PointIterator>(),
-            meshIt = mesh->begin<data::iterator::PointIterator>(),
-            meshEnd = mesh->end<data::iterator::PointIterator>() ;
-            originalMeshIt != originalMeshEnd && meshIt != meshEnd ;
-            ++originalMeshIt, ++meshIt)
-        {
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalMeshIt->point->x, meshIt->point->x, FLOAT_EPSILON);
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalMeshIt->point->y, meshIt->point->y, FLOAT_EPSILON);
-            CPPUNIT_ASSERT_DOUBLES_EQUAL(originalMeshIt->point->z, meshIt->point->z, FLOAT_EPSILON);
-        }
+        testReconstruction(data::Reconstruction::dynamicCast(sessionReader->getObject()));
     }
 }
 
@@ -3118,43 +3887,10 @@ void SessionTest::structureTraitsTest()
     std::filesystem::create_directories(tmpfolder);
     const std::filesystem::path testPath = tmpfolder / "structureTraitsTest.zip";
 
-    // Test data
-    const std::string expectedType(UUID::generateUUID());
-    const data::StructureTraits::StructureClass expectedClass = data::StructureTraits::StructureClass::NO_CONSTRAINT;
-    const std::string expectedNativeExp(UUID::generateUUID());
-    const std::string expectedNativeGeometricExp(UUID::generateUUID());
-    const std::string expectedAttachmentType(UUID::generateUUID());
-    const std::string expectedAnatomicRegion(UUID::generateUUID());
-    const std::string expectedPropertyCategory(UUID::generateUUID());
-    const std::string expectedPropertyType(UUID::generateUUID());
-
-    std::array<float, 4> rgba = {11.1F, 22.2F, 33.3F, 44.4F};
-
     // Test serialization
     {
         // Create reconstruction
-        auto structure = data::StructureTraits::New();
-
-        structure->setType(expectedType);
-        structure->setClass(expectedClass);
-        structure->setNativeExp(expectedNativeExp);
-        structure->setNativeGeometricExp(expectedNativeGeometricExp);
-        structure->setAttachmentType(expectedAttachmentType);
-        structure->setAnatomicRegion(expectedAnatomicRegion);
-        structure->setPropertyCategory(expectedPropertyCategory);
-        structure->setPropertyType(expectedPropertyType);
-
-        // Categories
-        auto& categories = structure->getCategories();
-        categories.clear();
-        categories.push_back(data::StructureTraits::Category::BODY);
-        categories.push_back(data::StructureTraits::Category::NECK);
-        categories.push_back(data::StructureTraits::Category::HEAD);
-
-        // Color
-        auto color = data::Color::New();
-        color->setRGBA(rgba[0], rgba[1], rgba[2], rgba[3]);
-        structure->setColor(color);
+        auto structure = newStructureTraits();
 
         // Create the session writer
         auto sessionWriter = io::session::SessionWriter::New();
@@ -3176,30 +3912,47 @@ void SessionTest::structureTraitsTest()
         sessionReader->read();
 
         // Test values
-        const auto& structure = data::StructureTraits::dynamicCast(sessionReader->getObject());
-        CPPUNIT_ASSERT(structure);
+        testStructureTraits(data::StructureTraits::dynamicCast(sessionReader->getObject()));
+    }
+}
 
-        CPPUNIT_ASSERT_EQUAL(expectedType, structure->getType());
-        CPPUNIT_ASSERT_EQUAL(expectedClass, structure->getClass());
-        CPPUNIT_ASSERT_EQUAL(expectedNativeExp, structure->getNativeExp());
-        CPPUNIT_ASSERT_EQUAL(expectedNativeGeometricExp, structure->getNativeGeometricExp());
-        CPPUNIT_ASSERT_EQUAL(expectedAttachmentType, structure->getAttachmentType());
-        CPPUNIT_ASSERT_EQUAL(expectedAnatomicRegion, structure->getAnatomicRegion());
-        CPPUNIT_ASSERT_EQUAL(expectedPropertyCategory, structure->getPropertyCategory());
-        CPPUNIT_ASSERT_EQUAL(expectedPropertyType, structure->getPropertyType());
+//------------------------------------------------------------------------------
 
-        // Categories
-        const auto& categories = structure->getCategories();
-        CPPUNIT_ASSERT_EQUAL(data::StructureTraits::Category::BODY, categories[0]);
-        CPPUNIT_ASSERT_EQUAL(data::StructureTraits::Category::NECK, categories[1]);
-        CPPUNIT_ASSERT_EQUAL(data::StructureTraits::Category::HEAD, categories[2]);
+void SessionTest::reconstructionTraitsTest()
+{
+    // Create a temporary directory
+    const std::filesystem::path tmpfolder = core::tools::System::getTemporaryFolder();
+    std::filesystem::create_directories(tmpfolder);
+    const std::filesystem::path testPath = tmpfolder / "reconstructionTraitsTest.zip";
 
-        // Color
-        const auto& color = structure->getColor();
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[0], color->red(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[1], color->green(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[2], color->blue(), FLOAT_EPSILON);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(rgba[3], color->alpha(), FLOAT_EPSILON);
+    // Test data
+
+    // Test serialization
+    {
+        // Create reconstruction
+        auto reconstructionTraits = newReconstructionTraits();
+
+        // Create the session writer
+        auto sessionWriter = io::session::SessionWriter::New();
+        CPPUNIT_ASSERT(sessionWriter);
+
+        // Configure the session writer
+        sessionWriter->setObject(reconstructionTraits);
+        sessionWriter->setFile(testPath);
+        sessionWriter->write();
+
+        CPPUNIT_ASSERT(std::filesystem::exists(testPath));
+    }
+
+    // Test deserialization
+    {
+        auto sessionReader = io::session::SessionReader::New();
+        CPPUNIT_ASSERT(sessionReader);
+        sessionReader->setFile(testPath);
+        sessionReader->read();
+
+        // Test values
+        testReconstructionTraits(data::ReconstructionTraits::dynamicCast(sessionReader->getObject()));
     }
 }
 

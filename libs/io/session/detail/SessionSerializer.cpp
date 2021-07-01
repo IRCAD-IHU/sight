@@ -49,6 +49,7 @@
 #include "data/PortSerializer.hpp"
 #include "data/ProcessObjectSerializer.hpp"
 #include "data/ReconstructionSerializer.hpp"
+#include "data/ReconstructionTraitsSerializer.hpp"
 #include "data/SeriesSerializer.hpp"
 #include "data/StringSerializer.hpp"
 #include "data/StructureTraitsSerializer.hpp"
@@ -86,6 +87,7 @@
 #include <data/Port.hpp>
 #include <data/ProcessObject.hpp>
 #include <data/Reconstruction.hpp>
+#include <data/ReconstructionTraits.hpp>
 #include <data/Series.hpp>
 #include <data/String.hpp>
 #include <data/StructureTraits.hpp>
@@ -140,7 +142,8 @@ static const std::unordered_map<std::string, std::function<data::IDataSerializer
     {sight::data::PlaneList::classname(), &std::make_unique<data::PlaneListSerializer>},
     {sight::data::ProcessObject::classname(), &std::make_unique<data::ProcessObjectSerializer>},
     {sight::data::Reconstruction::classname(), &std::make_unique<data::ReconstructionSerializer>},
-    {sight::data::StructureTraits::classname(), &std::make_unique<data::StructureTraitsSerializer>}
+    {sight::data::StructureTraits::classname(), &std::make_unique<data::StructureTraitsSerializer>},
+    {sight::data::ReconstructionTraits::classname(), &std::make_unique<data::ReconstructionTraitsSerializer>}
 };
 
 // Return a writer from a data object class name
