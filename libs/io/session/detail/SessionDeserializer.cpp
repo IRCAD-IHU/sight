@@ -21,78 +21,44 @@
 
 #include "SessionDeserializer.hpp"
 
-#include "data/ActivitySeriesDeserializer.hpp"
-#include "data/ArrayDeserializer.hpp"
-#include "data/CalibrationInfoDeserializer.hpp"
-#include "data/CameraDeserializer.hpp"
-#include "data/CameraSeriesDeserializer.hpp"
-#include "data/ColorDeserializer.hpp"
-#include "data/CompositeDeserializer.hpp"
-#include "data/EdgeDeserializer.hpp"
-#include "data/EquipmentDeserializer.hpp"
-#include "data/GenericDeserializer.hpp"
-#include "data/GraphDeserializer.hpp"
-#include "data/HistogramDeserializer.hpp"
-#include "data/ImageDeserializer.hpp"
-#include "data/LandmarksDeserializer.hpp"
-#include "data/LineDeserializer.hpp"
-#include "data/ListDeserializer.hpp"
-#include "data/MaterialDeserializer.hpp"
-#include "data/Matrix4Deserializer.hpp"
-#include "data/MeshDeserializer.hpp"
-#include "data/NodeDeserializer.hpp"
-#include "data/PatientDeserializer.hpp"
-#include "data/PlaneDeserializer.hpp"
-#include "data/PlaneListDeserializer.hpp"
-#include "data/PointDeserializer.hpp"
-#include "data/PointListDeserializer.hpp"
-#include "data/PortDeserializer.hpp"
-#include "data/ProcessObjectDeserializer.hpp"
-#include "data/ReconstructionDeserializer.hpp"
-#include "data/ReconstructionTraitsDeserializer.hpp"
-#include "data/SeriesDeserializer.hpp"
-#include "data/StringDeserializer.hpp"
-#include "data/StructureTraitsDeserializer.hpp"
-#include "data/StudyDeserializer.hpp"
-#include "data/VectorDeserializer.hpp"
+#include "ActivitySeries.hpp"
+#include "Array.hpp"
+#include "CalibrationInfo.hpp"
+#include "Camera.hpp"
+#include "CameraSeries.hpp"
+#include "Color.hpp"
+#include "Composite.hpp"
+#include "Edge.hpp"
+#include "Equipment.hpp"
+#include "Graph.hpp"
+#include "Histogram.hpp"
+#include "Image.hpp"
+#include "Landmarks.hpp"
+#include "Line.hpp"
+#include "List.hpp"
+#include "Material.hpp"
+#include "Matrix4.hpp"
+#include "Mesh.hpp"
+#include "Node.hpp"
+#include "Patient.hpp"
+#include "Plane.hpp"
+#include "PlaneList.hpp"
+#include "Point.hpp"
+#include "PointList.hpp"
+#include "Port.hpp"
+#include "ProcessObject.hpp"
+#include "Reconstruction.hpp"
+#include "ReconstructionTraits.hpp"
+#include "Series.hpp"
+#include "String.hpp"
+#include "StructureTraits.hpp"
+#include "Study.hpp"
+#include "Vector.hpp"
 
-#include <data/ActivitySeries.hpp>
-#include <data/Array.hpp>
 #include <data/Boolean.hpp>
-#include <data/CalibrationInfo.hpp>
-#include <data/Camera.hpp>
-#include <data/CameraSeries.hpp>
-#include <data/Color.hpp>
-#include <data/Composite.hpp>
-#include <data/Edge.hpp>
-#include <data/Equipment.hpp>
 #include <data/Float.hpp>
-#include <data/Graph.hpp>
-#include <data/Histogram.hpp>
-#include <data/Image.hpp>
 #include <data/Integer.hpp>
-#include <data/Landmarks.hpp>
-#include <data/Line.hpp>
-#include <data/List.hpp>
-#include <data/Material.hpp>
-#include <data/Matrix4.hpp>
-#include <data/Mesh.hpp>
 #include <data/mt/locked_ptr.hpp>
-#include <data/Node.hpp>
-#include <data/Patient.hpp>
-#include <data/Plane.hpp>
-#include <data/PlaneList.hpp>
-#include <data/Point.hpp>
-#include <data/PointList.hpp>
-#include <data/Port.hpp>
-#include <data/ProcessObject.hpp>
-#include <data/Reconstruction.hpp>
-#include <data/ReconstructionTraits.hpp>
-#include <data/Series.hpp>
-#include <data/String.hpp>
-#include <data/StructureTraits.hpp>
-#include <data/Study.hpp>
-#include <data/Vector.hpp>
 
 #include <io/zip/ArchiveReader.hpp>
 
@@ -107,60 +73,68 @@ namespace sight::io::session
 namespace detail
 {
 
+// The deserializer function signature
+using deserializer = std::function<data::Object::sptr(
+                                       zip::ArchiveReader&,
+                                       const boost::property_tree::ptree&,
+                                       const std::map<std::string, data::Object::sptr>&,
+                                       data::Object::sptr,
+                                       const core::crypto::secure_string&
+                                   )>;
+
 // Serializer registry
 // No concurrency protection as the map is statically initialized
-static const std::unordered_map<std::string, std::function<data::IDataDeserializer::cuptr(void)> > s_deserializers = {
-    {sight::data::Boolean::classname(), &std::make_unique<data::GenericDeserializer<sight::data::Boolean> >},
-    {sight::data::Integer::classname(), &std::make_unique<data::GenericDeserializer<sight::data::Integer> >},
-    {sight::data::Float::classname(), &std::make_unique<data::GenericDeserializer<sight::data::Float> >},
-    {sight::data::String::classname(), &std::make_unique<data::StringDeserializer>},
-    {sight::data::Composite::classname(), &std::make_unique<data::CompositeDeserializer>},
-    {sight::data::Mesh::classname(), &std::make_unique<data::MeshDeserializer>},
-    {sight::data::Equipment::classname(), &std::make_unique<data::EquipmentDeserializer>},
-    {sight::data::Patient::classname(), &std::make_unique<data::PatientDeserializer>},
-    {sight::data::Study::classname(), &std::make_unique<data::StudyDeserializer>},
-    {sight::data::Series::classname(), &std::make_unique<data::SeriesDeserializer>},
-    {sight::data::ActivitySeries::classname(), &std::make_unique<data::ActivitySeriesDeserializer>},
-    {sight::data::Array::classname(), &std::make_unique<data::ArrayDeserializer>},
-    {sight::data::Image::classname(), &std::make_unique<data::ImageDeserializer>},
-    {sight::data::Vector::classname(), &std::make_unique<data::VectorDeserializer>},
-    {sight::data::Point::classname(), &std::make_unique<data::PointDeserializer>},
-    {sight::data::PointList::classname(), &std::make_unique<data::PointListDeserializer>},
-    {sight::data::CalibrationInfo::classname(), &std::make_unique<data::CalibrationInfoDeserializer>},
-    {sight::data::Camera::classname(), &std::make_unique<data::CameraDeserializer>},
-    {sight::data::CameraSeries::classname(), &std::make_unique<data::CameraSeriesDeserializer>},
-    {sight::data::Color::classname(), &std::make_unique<data::ColorDeserializer>},
-    {sight::data::Edge::classname(), &std::make_unique<data::EdgeDeserializer>},
-    {sight::data::Port::classname(), &std::make_unique<data::PortDeserializer>},
-    {sight::data::Node::classname(), &std::make_unique<data::NodeDeserializer>},
-    {sight::data::Graph::classname(), &std::make_unique<data::GraphDeserializer>},
-    {sight::data::Histogram::classname(), &std::make_unique<data::HistogramDeserializer>},
-    {sight::data::Landmarks::classname(), &std::make_unique<data::LandmarksDeserializer>},
-    {sight::data::Line::classname(), &std::make_unique<data::LineDeserializer>},
-    {sight::data::List::classname(), &std::make_unique<data::ListDeserializer>},
-    {sight::data::Material::classname(), &std::make_unique<data::MaterialDeserializer>},
-    {sight::data::Matrix4::classname(), &std::make_unique<data::Matrix4Deserializer>},
-    {sight::data::Plane::classname(), &std::make_unique<data::PlaneDeserializer>},
-    {sight::data::PlaneList::classname(), &std::make_unique<data::PlaneListDeserializer>},
-    {sight::data::ProcessObject::classname(), &std::make_unique<data::ProcessObjectDeserializer>},
-    {sight::data::Reconstruction::classname(), &std::make_unique<data::ReconstructionDeserializer>},
-    {sight::data::StructureTraits::classname(), &std::make_unique<data::StructureTraitsDeserializer>},
-    {sight::data::ReconstructionTraits::classname(), &std::make_unique<data::ReconstructionTraitsDeserializer>}
+static const std::unordered_map<std::string, deserializer> s_deserializers = {
+    {data::ActivitySeries::classname(), &ActivitySeries::deserialize},
+    {data::Array::classname(), &Array::deserialize},
+    {data::Boolean::classname(), &Helper::deserialize<data::Boolean>},
+    {data::Camera::classname(), &Camera::deserialize},
+    {data::CameraSeries::classname(), &CameraSeries::deserialize},
+    {data::CalibrationInfo::classname(), &CalibrationInfo::deserialize},
+    {data::Color::classname(), &Color::deserialize},
+    {data::Composite::classname(), &Composite::deserialize},
+    {data::Edge::classname(), &Edge::deserialize},
+    {data::Equipment::classname(), &Equipment::deserialize},
+    {data::Float::classname(), &Helper::deserialize<data::Float>},
+    {data::Graph::classname(), &Graph::deserialize},
+    {data::Histogram::classname(), &Histogram::deserialize},
+    {data::Integer::classname(), &Helper::deserialize<data::Integer>},
+    {data::Image::classname(), &Image::deserialize},
+    {data::Landmarks::classname(), &Landmarks::deserialize},
+    {data::Line::classname(), &Line::deserialize},
+    {data::List::classname(), &List::deserialize},
+    {data::Material::classname(), &Material::deserialize},
+    {data::Matrix4::classname(), &Matrix4::deserialize},
+    {data::Mesh::classname(), &Mesh::deserialize},
+    {data::Node::classname(), &Node::deserialize},
+    {data::Patient::classname(), &Patient::deserialize},
+    {data::Point::classname(), &Point::deserialize},
+    {data::PointList::classname(), &PointList::deserialize},
+    {data::Plane::classname(), &Plane::deserialize},
+    {data::PlaneList::classname(), &PlaneList::deserialize},
+    {data::Port::classname(), &Port::deserialize},
+    {data::ProcessObject::classname(), &ProcessObject::deserialize},
+    {data::Reconstruction::classname(), &Reconstruction::deserialize},
+    {data::ReconstructionTraits::classname(), &ReconstructionTraits::deserialize},
+    {data::Series::classname(), &Series::deserialize},
+    {data::String::classname(), &String::deserialize},
+    {data::StructureTraits::classname(), &StructureTraits::deserialize},
+    {data::Study::classname(), &Study::deserialize},
+    {data::Vector::classname(), &Vector::deserialize}
 };
 
-// Return a writer from a data object class name
-inline static data::IDataDeserializer::cuptr findDeserializer(const std::string& classname)
+// Return a deserializer from a data object class name
+inline static deserializer findDeserializer(const std::string& classname)
 {
     const auto& it = s_deserializers.find(classname);
 
     if(it != s_deserializers.cend())
     {
-        // Return the found writer
-        return it->second();
+        // Return the found deserializer
+        return it->second;
     }
 
-    // Not found return empty one
-    return data::IDataDeserializer::uptr();
+    SIGHT_THROW("There is no deserializer registered for class '" << classname << "'.");
 }
 
 /// Deserializes recursively an initialized archive to a data::Object using an opened property tree
@@ -168,11 +142,12 @@ inline static data::IDataDeserializer::cuptr findDeserializer(const std::string&
 /// @param archive initialized archive
 /// @param tree property tree used to retrieve object index
 /// @param password password to use for optional encryption. Empty password means no encryption
-inline static sight::data::Object::sptr deepDeserialize(
-    std::map<std::string, sight::data::Object::sptr>& cache,
-    const zip::ArchiveReader::sptr& archive,
+inline static data::Object::sptr deepDeserialize(
+    std::map<std::string, data::Object::sptr>& cache,
+    zip::ArchiveReader& archive,
     const boost::property_tree::ptree& tree,
-    const core::crypto::secure_string& password
+    const core::crypto::secure_string& password,
+    const ISession::EncryptionLevel level
 )
 {
     const auto& treeIt = tree.begin();
@@ -180,7 +155,7 @@ inline static sight::data::Object::sptr deepDeserialize(
     // Do not deserialize empty tree
     if(treeIt == tree.end())
     {
-        return sight::data::Object::sptr();
+        return data::Object::sptr();
     }
 
     const auto& objectTree = treeIt->second;
@@ -188,10 +163,10 @@ inline static sight::data::Object::sptr deepDeserialize(
     // Do not deserialize null object tree
     if(objectTree.empty())
     {
-        return sight::data::Object::sptr();
+        return data::Object::sptr();
     }
 
-    const auto& uuid     = objectTree.get<std::string>("uuid");
+    const auto& uuid     = objectTree.get<std::string>(ISession::s_uuid);
     const auto& objectIt = cache.find(uuid);
 
     // First check the cache
@@ -205,32 +180,27 @@ inline static sight::data::Object::sptr deepDeserialize(
         const auto& classname    = treeIt->first;
         const auto& deserializer = findDeserializer(classname);
 
-        SIGHT_ASSERT(
-            "There is no deserializer registered for class '" << classname << "'.",
-            deserializer
-        );
-
         // Try to reuse existing rather than create new one
         // Existing object will be overwritten
-        auto object = sight::data::Object::dynamicCast(sight::data::Object::fromUUID(uuid));
+        auto object = data::Object::dynamicCast(data::Object::fromUUID(uuid));
 
         if(!object)
         {
             // Create the new object so we can safely deserialize child
-            object = sight::data::factory::New(classname);
+            object = data::factory::New(classname);
             object->setUUID(uuid);
         }
 
         // Lock for writing (it will do nothing if object is null)
-        sight::data::mt::locked_ptr<sight::data::Object> object_guard(object);
+        data::mt::locked_ptr<data::Object> object_guard(object);
 
         // Store the object in cache for later use and to allow circular reference
         cache[uuid] = object;
 
         // Construct children map, if needed
-        std::map<std::string, sight::data::Object::sptr> children;
+        std::map<std::string, data::Object::sptr> children;
 
-        const auto& childrenIt = objectTree.find("children");
+        const auto& childrenIt = objectTree.find(ISession::s_children);
 
         if(childrenIt != objectTree.not_found())
         {
@@ -240,13 +210,20 @@ inline static sight::data::Object::sptr deepDeserialize(
                     cache,
                     archive,
                     childIt.second,
-                    password
+                    password,
+                    level
                 );
             }
         }
 
         // Now, we can really deserialize the object
-        const auto& newObject = deserializer->deserialize(archive, objectTree, children, object, password);
+        const auto& newObject = deserializer(
+            archive,
+            objectTree,
+            children,
+            object,
+            ISession::pickle(password, core::crypto::secure_string(uuid), level)
+        );
 
         if(newObject != object)
         {
@@ -256,9 +233,9 @@ inline static sight::data::Object::sptr deepDeserialize(
         }
 
         // Construct field map
-        sight::data::Object::FieldMapType fields;
+        data::Object::FieldMapType fields;
 
-        const auto& fields_it = objectTree.find("fields");
+        const auto& fields_it = objectTree.find(ISession::s_fields);
 
         if(fields_it != objectTree.not_found())
         {
@@ -268,7 +245,8 @@ inline static sight::data::Object::sptr deepDeserialize(
                     cache,
                     archive,
                     field_it.second,
-                    password
+                    password,
+                    level
                 );
             }
         }
@@ -282,13 +260,13 @@ inline static sight::data::Object::sptr deepDeserialize(
 
 //------------------------------------------------------------------------------
 
-sight::data::Object::sptr SessionDeserializer::deserialize(
+data::Object::sptr SessionDeserializer::deserialize(
     const std::filesystem::path& archive_path,
     const core::crypto::secure_string& password
 ) const
 {
     // Initialize the object cache
-    std::map<std::string, sight::data::Object::sptr> cache;
+    std::map<std::string, data::Object::sptr> cache;
 
     // Create the archive that contain everything
     const auto& archive = zip::ArchiveReader::shared(archive_path);
@@ -297,16 +275,16 @@ sight::data::Object::sptr SessionDeserializer::deserialize(
     boost::property_tree::ptree tree;
     {
         // istream must be closed after this, since archive could only open files one by one
-        const auto istream = archive->openFile(this->getIndexFilePath(), password);
+        const auto istream = archive->openFile(getIndexFilePath(), password);
         boost::property_tree::read_json(*istream, tree);
     }
 
     SIGHT_THROW_IF(
-        "Empty '" << this->getIndexFilePath() << "' from archive '" << archive_path << "'.",
+        "Empty '" << getIndexFilePath() << "' from archive '" << archive_path << "'.",
         tree.empty()
     );
 
-    return deepDeserialize(cache, archive, tree, password);
+    return deepDeserialize(cache, *archive, tree, password, getEncryptionLevel());
 }
 
 } // namespace detail
